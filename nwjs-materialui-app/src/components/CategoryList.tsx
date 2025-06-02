@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { List, ListItem, ListItemText, Button, TextField, Box } from '@mui/material';
-import { db } from '../db/jsonDb';
-import { Category, Address } from '../types';
+import { getDb } from '../db/rxdb';
+import { Category } from '../types';
 
 const categoriesList = ['BTC', 'ETH', 'ADA', 'SUI'];
 
@@ -11,65 +11,68 @@ const CategoryList: React.FC = () => {
     const [addressInput, setAddressInput] = useState('');
 
     useEffect(() => {
-        const fetchCategories = () => {
-            const data = db.getData('/categories') || {};
-            setCategories(Object.entries(data).map(([name, addresses]) => ({
-                name,
-                addresses
-            })));
-        };
-        fetchCategories();
+        let sub: any;
+        getDb().then(db => {
+            sub = db.categories.find().$.subscribe((docs: any) => {
+                setCategories(docs ? docs.map((doc: any) => doc.toJSON()) : []);
+            });
+        });
+        return () => sub && sub.unsubscribe();
     }, []);
 
-    const handleAddCategory = (category: string) => {
+    const handleAddCategory = async (category: string) => {
         if (!categories.find(cat => cat.name === category)) {
-            db.push(`/categories/${category}`, []);
-            setCategories([...categories, { name: category, addresses: [] }]);
+            const db = await getDb();
+            await db.categories.insert({ name: category, addresses: [] });
         }
     };
 
-    const handleDeleteCategory = (category: string) => {
-        db.delete(`/categories/${category}`);
-        setCategories(categories.filter(cat => cat.name !== category));
+    const handleDeleteCategory = async (category: string) => {
+        const db = await getDb();
+        const doc = await db.categories.findOne(category).exec();
+        if (doc) await doc.remove();
     };
 
-    const handleAddAddress = (category: string) => {
+    const handleAddAddress = async (category: string) => {
         if (addressInput) {
-            db.push(`/categories/${category}/[]`, addressInput);
-            setCategories(categories.map(cat => 
-                cat.name === category 
-                ? { ...cat, addresses: [...cat.addresses, addressInput] } 
-                : cat
-            ));
+            const db = await getDb();
+            const doc = await db.categories.findOne(category).exec();
+            if (doc) {
+                const addresses = doc.addresses || [];
+                if (!addresses.includes(addressInput)) {
+                    await doc.atomicPatch({ addresses: [...addresses, addressInput] });
+                }
+            }
             setAddressInput('');
         }
     };
 
-    const handleDeleteAddress = (category: string, address: string) => {
-        db.delete(`/categories/${category}/[]`, address);
-        setCategories(categories.map(cat => 
-            cat.name === category 
-            ? { ...cat, addresses: cat.addresses.filter(addr => addr !== address) } 
-            : cat
-        ));
+    const handleDeleteAddress = async (category: string, address: string) => {
+        const db = await getDb();
+        const doc = await db.categories.findOne(category).exec();
+        if (doc) {
+            const addresses = (doc.addresses || []).filter((addr: string) => addr !== address);
+            await doc.atomicPatch({ addresses });
+        }
     };
 
     return (
         <Box>
             <List>
                 {categoriesList.map(category => (
-                    <ListItem key={category}>
+                    <ListItem key={category} alignItems="flex-start">
                         <ListItemText primary={category} />
                         <Button onClick={() => handleAddCategory(category)}>Add Category</Button>
                         <Button onClick={() => handleDeleteCategory(category)}>Delete Category</Button>
-                        <TextField 
-                            value={selectedCategory === category ? addressInput : ''} 
-                            onChange={(e) => setAddressInput(e.target.value)} 
-                            placeholder="Add Address" 
+                        <TextField
+                            value={selectedCategory === category ? addressInput : ''}
+                            onFocus={() => setSelectedCategory(category)}
+                            onChange={(e) => setAddressInput(e.target.value)}
+                            placeholder="Add Address"
                         />
                         <Button onClick={() => handleAddAddress(category)}>Add Address</Button>
                         <List>
-                            {categories.find(cat => cat.name === category)?.addresses.map((address, index) => (
+                            {(categories.find(cat => cat.name === category)?.addresses || []).map((address: string, index: number) => (
                                 <ListItem key={index}>
                                     <ListItemText primary={address} />
                                     <Button onClick={() => handleDeleteAddress(category, address)}>Delete</Button>
