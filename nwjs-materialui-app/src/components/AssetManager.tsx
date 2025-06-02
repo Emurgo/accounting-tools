@@ -6,12 +6,12 @@ import { Category, Address } from '../types';
 
 const AssetManager: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
-    const [newCategory, setNewCategory] = useState<string>('');
-    const [newAddress, setNewAddress] = useState<{ category: string; address: string }>({ category: '', address: '' });
+    const [newCategory, setNewCategory] = useState<Category['name']>('BTC');
+    const [newAddress, setNewAddress] = useState<string>('');
 
     useEffect(() => {
-        const fetchCategories = () => {
-            const data = db.getData('/categories');
+        const fetchCategories = async () => {
+            const data = await db.getData('/categories');
             setCategories(data);
         };
         fetchCategories();
@@ -21,7 +21,7 @@ const AssetManager: React.FC = () => {
         if (newCategory) {
             db.push(`/categories/${newCategory}`, { addresses: [] });
             setCategories([...categories, { name: newCategory, addresses: [] }]);
-            setNewCategory('');
+            setNewCategory('BTC');
         }
     };
 
@@ -30,25 +30,25 @@ const AssetManager: React.FC = () => {
         setCategories(categories.filter(category => category.name !== categoryName));
     };
 
-    const handleAddAddress = (categoryName: string) => {
-        if (newAddress.address) {
-            db.push(`/categories/${categoryName}/addresses[]`, newAddress.address);
+    const handleAddAddress = (categoryName: Category['name']) => {
+        if (newAddress) {
+            db.push(`/categories/${categoryName}/addresses[]`, newAddress);
             const updatedCategories = categories.map(category => {
                 if (category.name === categoryName) {
-                    return { ...category, addresses: [...category.addresses, newAddress.address] };
+                    return { ...category, addresses: [...category.addresses, { address: newAddress, id: newAddress/*fixme*/ }] };
                 }
                 return category;
             });
             setCategories(updatedCategories);
-            setNewAddress({ category: '', address: '' });
+            setNewAddress('');
         }
     };
 
-    const handleDeleteAddress = (categoryName: string, address: string) => {
-        db.delete(`/categories/${categoryName}/addresses/${address}`);
+    const handleDeleteAddress = (addressCategory: Category, address: Address) => {
+        db.delete(`/categories/${addressCategory.name}/addresses/${address}`);
         const updatedCategories = categories.map(category => {
-            if (category.name === categoryName) {
-                return { ...category, addresses: category.addresses.filter(addr => addr !== address) };
+            if (category === addressCategory) {
+                return { ...category, addresses: category.addresses.filter(addr => addr.address !== address.address) };
             }
             return category;
         });
@@ -61,7 +61,7 @@ const AssetManager: React.FC = () => {
             <TextField
                 label="New Category"
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                onChange={(e) => setNewCategory(e.target.value as Category['name']/* fixme */)}
             />
             <Button onClick={handleAddCategory}>Add Category</Button>
             <List>
@@ -77,16 +77,16 @@ const AssetManager: React.FC = () => {
                         </ListItem>
                         <TextField
                             label="New Address"
-                            value={newAddress.category === category.name ? newAddress.address : ''}
-                            onChange={(e) => setNewAddress({ category: category.name, address: e.target.value })}
+                            value={newAddress}
+                            onChange={(e) => setNewAddress(e.target.value)}
                         />
                         <Button onClick={() => handleAddAddress(category.name)}>Add Address</Button>
                         <List>
                             {category.addresses.map(address => (
-                                <ListItem key={address}>
+                                <ListItem key={address.address}>
                                     <ListItemText primary={address} />
                                     <ListItemSecondaryAction>
-                                        <IconButton edge="end" onClick={() => handleDeleteAddress(category.name, address)}>
+                                        <IconButton edge="end" onClick={() => handleDeleteAddress(category, address)}>
                                             <DeleteIcon />
                                         </IconButton>
                                     </ListItemSecondaryAction>
