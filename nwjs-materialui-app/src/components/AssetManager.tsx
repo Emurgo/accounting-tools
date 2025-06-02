@@ -1,58 +1,62 @@
 import React, { useEffect, useState } from 'react';
-import { Button, TextField, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton } from '@mui/material';
+import { Button, TextField, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton, MenuItem } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { db } from '../db/jsonDb';
-import { Category, Address } from '../types';
+import { getDb } from '../db/rxdb';
+import { Category } from '../types';
+
+const CATEGORIES = ['BTC', 'ETH', 'ADA', 'SUI'];
 
 const AssetManager: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
-    const [newCategory, setNewCategory] = useState<Category['name']>('BTC');
+    const [newCategory, setNewCategory] = useState<string>('BTC');
     const [newAddress, setNewAddress] = useState<string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
 
     useEffect(() => {
-        const fetchCategories = async () => {
-            const data = await db.getData('/categories');
-            setCategories(data);
-        };
-        fetchCategories();
+        let sub: any;
+        getDb().then(db => {
+            sub = db.categories.find().$.subscribe((docs: any) => {
+                setCategories(docs ? docs.map((doc: any) => doc.toJSON()) : []);
+            });
+        });
+        return () => sub && sub.unsubscribe();
     }, []);
 
-    const handleAddCategory = () => {
-        if (newCategory) {
-            db.push(`/categories/${newCategory}`, { addresses: [] });
-            setCategories([...categories, { name: newCategory, addresses: [] }]);
+    const handleAddCategory = async () => {
+        if (newCategory && !categories.find(c => c.name === newCategory)) {
+            const db = await getDb();
+            await db.categories.insert({ name: newCategory, addresses: [] });
             setNewCategory('BTC');
         }
     };
 
-    const handleDeleteCategory = (categoryName: string) => {
-        db.delete(`/categories/${categoryName}`);
-        setCategories(categories.filter(category => category.name !== categoryName));
+    const handleDeleteCategory = async (categoryName: string) => {
+        const db = await getDb();
+        const doc = await db.categories.findOne(categoryName).exec();
+        if (doc) await doc.remove();
     };
 
-    const handleAddAddress = (categoryName: Category['name']) => {
+    const handleAddAddress = async (categoryName: string) => {
         if (newAddress) {
-            db.push(`/categories/${categoryName}/addresses[]`, newAddress);
-            const updatedCategories = categories.map(category => {
-                if (category.name === categoryName) {
-                    return { ...category, addresses: [...category.addresses, { address: newAddress, id: newAddress/*fixme*/ }] };
+            const db = await getDb();
+            const doc = await db.categories.findOne(categoryName).exec();
+            if (doc) {
+                const addresses = doc.addresses || [];
+                if (!addresses.find((a: any) => a.address === newAddress)) {
+                    await doc.atomicPatch({ addresses: [...addresses, { address: newAddress }] });
                 }
-                return category;
-            });
-            setCategories(updatedCategories);
+            }
             setNewAddress('');
         }
     };
 
-    const handleDeleteAddress = (addressCategory: Category, address: Address) => {
-        db.delete(`/categories/${addressCategory.name}/addresses/${address}`);
-        const updatedCategories = categories.map(category => {
-            if (category === addressCategory) {
-                return { ...category, addresses: category.addresses.filter(addr => addr.address !== address.address) };
-            }
-            return category;
-        });
-        setCategories(updatedCategories);
+    const handleDeleteAddress = async (categoryName: string, address: string) => {
+        const db = await getDb();
+        const doc = await db.categories.findOne(categoryName).exec();
+        if (doc) {
+            const addresses = doc.addresses.filter((a: any) => a.address !== address);
+            await doc.atomicPatch({ addresses });
+        }
     };
 
     return (
@@ -60,9 +64,14 @@ const AssetManager: React.FC = () => {
             <h2>Manage Assets</h2>
             <TextField
                 label="New Category"
+                select
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value as Category['name']/* fixme */)}
-            />
+                onChange={e => setNewCategory(e.target.value)}
+            >
+                {CATEGORIES.map(cat => (
+                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                ))}
+            </TextField>
             <Button onClick={handleAddCategory}>Add Category</Button>
             <List>
                 {categories.map(category => (
@@ -77,16 +86,17 @@ const AssetManager: React.FC = () => {
                         </ListItem>
                         <TextField
                             label="New Address"
-                            value={newAddress}
-                            onChange={(e) => setNewAddress(e.target.value)}
+                            value={selectedCategory === category.name ? newAddress : ''}
+                            onFocus={() => setSelectedCategory(category.name)}
+                            onChange={e => setNewAddress(e.target.value)}
                         />
                         <Button onClick={() => handleAddAddress(category.name)}>Add Address</Button>
                         <List>
-                            {category.addresses.map(address => (
+                            {(category.addresses || []).map((address: any) => (
                                 <ListItem key={address.address}>
-                                    <ListItemText primary={address} />
+                                    <ListItemText primary={address.address} />
                                     <ListItemSecondaryAction>
-                                        <IconButton edge="end" onClick={() => handleDeleteAddress(category, address)}>
+                                        <IconButton edge="end" onClick={() => handleDeleteAddress(category.name, address.address)}>
                                             <DeleteIcon />
                                         </IconButton>
                                     </ListItemSecondaryAction>
