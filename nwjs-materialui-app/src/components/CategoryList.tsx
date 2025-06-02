@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { List, ListItem, ListItemText, Button, TextField, Box } from '@mui/material';
 import { getDb } from '../db/rxdb';
-import { Category } from '../types';
+import { Category, Address } from '../types';
 
 const categoriesList = ['BTC', 'ETH', 'ADA', 'SUI'];
 
@@ -72,10 +72,10 @@ const CategoryList: React.FC = () => {
                         />
                         <Button onClick={() => handleAddAddress(category)}>Add Address</Button>
                         <List>
-                            {(categories.find(cat => cat.name === category)?.addresses || []).map((address: string, index: number) => (
+                            {(categories.find(cat => cat.name === category)?.addresses || []).map((address: Address, index: number) => (
                                 <ListItem key={index}>
-                                    <ListItemText primary={address} />
-                                    <Button onClick={() => handleDeleteAddress(category, address)}>Delete</Button>
+                                    <ListItemText primary={address.address} />
+                                    <Button onClick={() => handleDeleteAddress(category, address.address)}>Delete</Button>
                                 </ListItem>
                             ))}
                         </List>
