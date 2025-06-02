@@ -1,5 +1,5 @@
 import { createRxDatabase, addRxPlugin } from 'rxdb';
-import { getRxStorageLocalStorage } from 'rxdb/plugins/storage-localstorage';
+import { getRxStorageLocalstorage } from 'rxdb/plugins/storage-localstorage';
 import { Category } from '../types';
 
 const categorySchema = {
@@ -8,7 +8,7 @@ const categorySchema = {
     description: 'describes a category',
     type: 'object',
     properties: {
-        name: { type: 'string', primary: true },
+        name: { type: 'string', maxLength: 50},
         addresses: {
             type: 'array',
             uniqueItems: true,
@@ -20,6 +20,7 @@ const categorySchema = {
             }
         }
     },
+    primaryKey: 'name',
     required: ['name', 'addresses']
 };
 
@@ -29,8 +30,7 @@ export const getDb = async () => {
     if (!dbPromise) {
         dbPromise = createRxDatabase({
             name: 'assetsdb',
-            storage: getRxStorageLocalStorage(),
-            ignoreDuplicate: true,
+            storage: getRxStorageLocalstorage(),
         }).then(async db => {
             await db.addCollections({
                 categories: {
