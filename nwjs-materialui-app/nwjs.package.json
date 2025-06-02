@@ -1,0 +1,18 @@
+{
+  "name": "nwjs-materialui-app",
+  "version": "1.0.0",
+  "main": "main.js",
+  "chromium-args": "--disable-gpu",
+  "window": {
+    "title": "NW.js Material-UI App",
+    "width": 800,
+    "height": 600,
+    "resizable": true,
+    "fullscreen": false
+  },
+  "nodejs": true,
+  "webkit": {
+    "page": "public/index.html"
+  },
+  "sandbox": false
+}
