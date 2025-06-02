@@ -76,7 +76,9 @@ const AssetManager: React.FC = () => {
             <List>
                 {categories.map(category => (
                     <div key={category.name}>
-                        <ListItem>
+                        <ListItem
+                            sx={{ bgcolor: 'action.selected' }}
+                        >
                             <ListItemText primary={category.name} />
                             <ListItemSecondaryAction>
                                 <IconButton edge="end" onClick={() => handleDeleteCategory(category.name)}>
