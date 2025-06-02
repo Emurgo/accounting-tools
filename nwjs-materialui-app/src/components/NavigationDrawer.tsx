@@ -1,8 +1,12 @@
 import React from 'react';
 import { Drawer, List, ListItem, ListItemText, AppBar, Toolbar, Typography } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const NavigationDrawer: React.FC = () => {
+    const location = useLocation();
+
+    const isActive = (path: string) => location.pathname === path;
+
     return (
         <Drawer variant="permanent" anchor="left">
             <AppBar position="static">
@@ -11,10 +15,20 @@ const NavigationDrawer: React.FC = () => {
                 </Toolbar>
             </AppBar>
             <List>
-                <ListItem button component={Link} to="/manage-assets">
+                <ListItem
+                    button
+                    component={Link}
+                    to="/manage-assets"
+                    sx={isActive('/manage-assets') ? { bgcolor: 'action.selected' } : {}}
+                >
                     <ListItemText primary="Manage Assets" />
                 </ListItem>
-                <ListItem button component={Link} to="/weekly-report">
+                <ListItem
+                    button
+                    component={Link}
+                    to="/weekly-report"
+                    sx={isActive('/weekly-report') ? { bgcolor: 'action.selected' } : {}}
+                >
                     <ListItemText primary="Weekly report" />
                 </ListItem>
             </List>
