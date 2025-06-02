@@ -2,7 +2,8 @@
   "name": "nwjs-materialui-app",
   "version": "1.0.0",
   "description": "A NW.js application using Material-UI, React Router, and node-json-db for managing assets.",
-  "main": "src/main.js",
+  "main": "http://localhost:3000",
+  "node-remote": "http://localhost:3000/*",
   "scripts": {
     "start": "nw .",
     "build": "tsc"
