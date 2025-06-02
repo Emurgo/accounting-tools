@@ -43,7 +43,7 @@ const AssetManager: React.FC = () => {
             if (doc) {
                 const addresses = doc.addresses || [];
                 if (!addresses.find((a: any) => a.address === newAddress)) {
-                    await doc.atomicPatch({ addresses: [...addresses, { address: newAddress }] });
+                    await doc.patch({ addresses: [...addresses, { address: newAddress }] });
                 }
             }
             setNewAddress('');
@@ -55,7 +55,7 @@ const AssetManager: React.FC = () => {
         const doc = await db.categories.findOne(categoryName).exec();
         if (doc) {
             const addresses = doc.addresses.filter((a: any) => a.address !== address);
-            await doc.atomicPatch({ addresses });
+            await doc.patch({ addresses });
         }
     };
 
