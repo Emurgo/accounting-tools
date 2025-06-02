@@ -14,6 +14,9 @@ const NavigationDrawer: React.FC = () => {
                 <ListItem button component={Link} to="/manage-assets">
                     <ListItemText primary="Manage Assets" />
                 </ListItem>
+                <ListItem button component={Link} to="/weekly-report">
+                    <ListItemText primary="Weekly report" />
+                </ListItem>
             </List>
         </Drawer>
     );
