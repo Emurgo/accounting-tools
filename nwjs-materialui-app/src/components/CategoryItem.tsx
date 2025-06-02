@@ -31,7 +31,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onCategoryDeleted
             if (doc) {
                 const addresses = doc.addresses || [];
                 if (!addresses.find((a: any) => a.address === newAddress)) {
-                    await doc.atomicUpdate((oldData: any) => ({
+                    await doc.patch((oldData: any) => ({
                         ...oldData,
                         addresses: [...addresses, { address: newAddress }]
                     }));
@@ -46,7 +46,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category, onCategoryDeleted
         const doc = await db.categories.findOne(category.name).exec();
         if (doc) {
             const addresses = doc.addresses.filter((a: any) => a.address !== address);
-            await doc.atomicUpdate((oldData: any) => ({
+            await doc.patch((oldData: any) => ({
                 ...oldData,
                 addresses
             }));
