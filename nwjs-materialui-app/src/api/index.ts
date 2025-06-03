@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 interface API {
     name: string;
     getBalance: (address: string) => Promise<string>;
+    getPriceUSD: () => Promise<string>;
 }
 
 const CRYPTOAPIS_KEY = '5b8f18e02dbe444b4f86fccf2235549ec014cf82'; // Replace with your actual API key
@@ -28,6 +29,13 @@ export const apis: API[] = [
             if (!satoshis) return '0';
             return new BigNumber(satoshis).dividedBy(1e8).toString(10);
         },
+        getPriceUSD: async () => {
+            // Using CoinGecko public API for price
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch BTC price');
+            const data = await res.json();
+            return data?.bitcoin?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'API3',
@@ -45,6 +53,12 @@ export const apis: API[] = [
             if (!wei) return '0';
             return new BigNumber(wei).dividedBy(1e18).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=api3&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch API3 price');
+            const data = await res.json();
+            return data?.api3?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'ETH',
@@ -60,6 +74,12 @@ export const apis: API[] = [
             if (!wei) return '0';
             return new BigNumber(wei).dividedBy(1e18).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch ETH price');
+            const data = await res.json();
+            return data?.ethereum?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'SOL',
@@ -81,6 +101,12 @@ export const apis: API[] = [
             if (!lamports) return '0';
             return new BigNumber(lamports).dividedBy(1e9).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch SOL price');
+            const data = await res.json();
+            return data?.solana?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'SUI',
@@ -102,6 +128,12 @@ export const apis: API[] = [
             if (!mist) return '0';
             return new BigNumber(mist).dividedBy(1e9).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch SUI price');
+            const data = await res.json();
+            return data?.sui?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'XRP',
@@ -123,6 +155,12 @@ export const apis: API[] = [
             if (!drops) return '0';
             return new BigNumber(drops).dividedBy(1e6).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch XRP price');
+            const data = await res.json();
+            return data?.ripple?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'ADA',
@@ -144,6 +182,12 @@ export const apis: API[] = [
             if (!lovelace) return '0';
             return new BigNumber(lovelace).dividedBy(1e6).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=cardano&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch ADA price');
+            const data = await res.json();
+            return data?.cardano?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'stETH',
@@ -161,6 +205,12 @@ export const apis: API[] = [
             if (!wei) return '0';
             return new BigNumber(wei).dividedBy(1e18).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=staked-ether&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch stETH price');
+            const data = await res.json();
+            return data?.['staked-ether']?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'USDT',
@@ -178,6 +228,12 @@ export const apis: API[] = [
             if (!raw) return '0';
             return new BigNumber(raw).dividedBy(1e6).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch USDT price');
+            const data = await res.json();
+            return data?.tether?.usd?.toString() ?? '0';
+        }
     },
     {
         name: 'USDC',
@@ -195,5 +251,11 @@ export const apis: API[] = [
             if (!raw) return '0';
             return new BigNumber(raw).dividedBy(1e6).toString(10);
         },
+        getPriceUSD: async () => {
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=usd');
+            if (!res.ok) throw new Error('Failed to fetch USDC price');
+            const data = await res.json();
+            return data?.['usd-coin']?.usd?.toString() ?? '0';
+        }
     },
 ];
