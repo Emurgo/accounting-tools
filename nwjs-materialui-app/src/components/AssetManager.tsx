@@ -3,12 +3,13 @@ import { Button, TextField, List, MenuItem } from '@mui/material';
 import { getDb } from '../db/rxdb';
 import { Category } from '../types';
 import CategoryItem from './CategoryItem';
+import { apis } from '../api';
 
-const CATEGORIES = ['BTC', 'ETH', 'ADA', 'SUI'];
+const CATEGORIES = apis.map(api => api.name);
 
 const AssetManager: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
-    const [newCategory, setNewCategory] = useState<string>('BTC');
+    const [newCategory, setNewCategory] = useState<string>(CATEGORIES[0] || '');
 
     useEffect(() => {
         let sub: any;
@@ -24,7 +25,7 @@ const AssetManager: React.FC = () => {
         if (newCategory && !categories.find(c => c.name === newCategory)) {
             const db = await getDb();
             await db.categories.insert({ name: newCategory, addresses: [] });
-            setNewCategory('BTC');
+            setNewCategory(CATEGORIES[0] || '');
         }
     };
 
