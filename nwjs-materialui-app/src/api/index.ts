@@ -5,8 +5,8 @@ interface API {
     getBalance: (address: string) => Promise<string>;
 }
 
-const CRYPTOAPIS_KEY = 'YOUR_CRYPTOAPIS_API_KEY'; // Replace with your actual API key
-const ETHERSCAN_KEY = 'YOUR_ETHERSCAN_API_KEY';   // Replace with your actual Etherscan API key
+const CRYPTOAPIS_KEY = '5b8f18e02dbe444b4f86fccf2235549ec014cf82'; // Replace with your actual API key
+const ETHERSCAN_KEY = '7W73YR7MHZZ9IVGRAG1UZPRPP7Q9AJVDA3';   // Replace with your actual Etherscan API key
 
 export const apis: API[] = [
     {
