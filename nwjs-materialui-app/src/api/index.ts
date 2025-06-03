@@ -162,4 +162,38 @@ export const apis: API[] = [
             return new BigNumber(wei).dividedBy(1e18).toString(10);
         },
     },
+    {
+        name: 'USDT',
+        getBalance: async (address: string) => {
+            // USDT (Tether) ERC20 contract address (mainnet)
+            const contractAddress = '0xdac17f958d2ee523a2206206994597c13d831ec7';
+            const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch USDT balance: ${res.statusText}`);
+            }
+            const data = await res.json();
+            // USDT uses 6 decimals
+            const raw = data?.result;
+            if (!raw) return '0';
+            return new BigNumber(raw).dividedBy(1e6).toString(10);
+        },
+    },
+    {
+        name: 'USDC',
+        getBalance: async (address: string) => {
+            // USDC (USD Coin) ERC20 contract address (mainnet)
+            const contractAddress = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+            const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch USDC balance: ${res.statusText}`);
+            }
+            const data = await res.json();
+            // USDC uses 6 decimals
+            const raw = data?.result;
+            if (!raw) return '0';
+            return new BigNumber(raw).dividedBy(1e6).toString(10);
+        },
+    },
 ];
