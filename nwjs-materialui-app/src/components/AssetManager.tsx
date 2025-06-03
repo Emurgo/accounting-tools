@@ -3,9 +3,7 @@ import { Button, TextField, List, MenuItem } from '@mui/material';
 import { getDb } from '../db/rxdb';
 import { Category } from '../types';
 import CategoryItem from './CategoryItem';
-import { apis } from '../api';
-
-const CATEGORIES = apis.map(api => api.name);
+import { CATEGORIES } from '../api';
 
 const AssetManager: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
