@@ -15,9 +15,11 @@ const categorySchema = {
             items: {
                 type: 'object',
                 properties: {
-                    address: { type: 'string' }
+                    address: { type: 'string' },
+                    entity: { type: 'string', enum: ['EMG', 'EMC'] },
+                    liquid: { type: 'boolean' }
                 },
-                required: ['address']
+                required: ['address', 'entity', 'liquid']
             }
         }
     },
