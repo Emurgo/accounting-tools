@@ -1,14 +1,14 @@
-import { createRxDatabase, addRxPlugin } from 'rxdb';
+import { createRxDatabase, RxDatabase, RxCollection, RxJsonSchema, ExtractDocumentTypeFromTypedRxJsonSchema } from 'rxdb';
 import { getRxStorageLocalstorage } from 'rxdb/plugins/storage-localstorage';
-import { Category } from '../types';
 
+// Strongly-typed schema
 const categorySchema = {
     title: 'category schema',
     version: 0,
     description: 'describes a category',
     type: 'object',
     properties: {
-        name: { type: 'string', maxLength: 50},
+        name: { type: 'string', maxLength: 50 },
         addresses: {
             type: 'array',
             uniqueItems: true,
@@ -16,25 +16,32 @@ const categorySchema = {
                 type: 'object',
                 properties: {
                     address: { type: 'string' }
-                }
+                },
+                required: ['address']
             }
         }
     },
     primaryKey: 'name',
     required: ['name', 'addresses']
-};
+} as const;
 
-let dbPromise: Promise<any> | null = null;
+export type CategoryDocType = ExtractDocumentTypeFromTypedRxJsonSchema<typeof categorySchema>;
 
-export const getDb = async () => {
+export interface CategoryCollection {
+    categories: RxCollection<CategoryDocType>;
+}
+
+let dbPromise: Promise<RxDatabase<CategoryCollection>> | null = null;
+
+export const getDb = async (): Promise<RxDatabase<CategoryCollection>> => {
     if (!dbPromise) {
-        dbPromise = createRxDatabase({
+        dbPromise = createRxDatabase<CategoryCollection>({
             name: 'assetsdb',
             storage: getRxStorageLocalstorage(),
         }).then(async db => {
             await db.addCollections({
                 categories: {
-                    schema: categorySchema
+                    schema: categorySchema as RxJsonSchema<CategoryDocType>
                 }
             });
             return db;
