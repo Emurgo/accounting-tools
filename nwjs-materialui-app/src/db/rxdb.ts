@@ -51,3 +51,9 @@ export const getDb = async (): Promise<RxDatabase<CategoryCollection>> => {
     }
     return dbPromise;
 };
+
+export const getAllCategories = async (): Promise<CategoryDocType[]> => {
+    const db = await getDb();
+    const docs = await db.categories.find().exec();
+    return docs.map(doc => doc.toJSON() as CategoryDocType);
+};
