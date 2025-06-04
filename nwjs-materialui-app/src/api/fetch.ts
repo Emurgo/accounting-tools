@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 
 interface API {
     name: string;
@@ -80,21 +81,11 @@ export const apis: API[] = [
     {
         name: 'SOL',
         getBalance: async (address: string) => {
-            // Using CryptoAPIs for Solana balance with the correct endpoint
-            const url = `https://rest.cryptoapis.io/addresses-latest/solana/mainnet/${address}/balance`;
-            const res = await fetch(url, {
-                headers: {
-                    'X-API-Key': CRYPTOAPIS_KEY,
-                    'Accept': 'application/json'
-                }
-            });
-            if (!res.ok) {
-                throw new Error(`Failed to fetch SOL balance: ${res.statusText}`);
-            }
-            const data = await res.json();
-            // The balance is in lamports, convert to SOL (1 SOL = 1e9 lamports)
-            const lamports = data?.data?.item?.confirmedBalance?.amount;
-            if (!lamports) return '0';
+            // Use @solana/web3.js to get SOL balance
+            const connection = new Connection('https://api.mainnet-beta.solana.com');
+            const pubkey = new PublicKey(address);
+            const lamports = await connection.getBalance(pubkey);
+            // Convert lamports to SOL (1 SOL = 1e9 lamports)
             return new BigNumber(lamports).dividedBy(1e9).toString(10);
         },
         getPriceUSD: async () => {
