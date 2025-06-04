@@ -11,6 +11,7 @@ const CRYPTOAPIS_KEY = '5b8f18e02dbe444b4f86fccf2235549ec014cf82';
 const ETHERSCAN_KEY = '7W73YR7MHZZ9IVGRAG1UZPRPP7Q9AJVDA3';
 // https://solana.com/rpc
 const SOLANA_RPC_URL = 'https://white-neat-orb.solana-mainnet.quiknode.pro/01d191873234b69fde495a500fde3f65109aca8a/';
+const CARDANOSCAN_KEY = '18c8265c-845b-4a8d-9ebe-b92a734edc7a';
 
 export const apis: API[] = [
     {
@@ -159,7 +160,6 @@ export const apis: API[] = [
         name: 'ADA',
         getBalance: async (address: string) => {
             // Using cardanoscan API for Cardano (ADA) balance
-            const CARDANOSCAN_KEY = 'YOUR_CARDANOSCAN_API_KEY'; // Replace with your actual Cardanoscan API key
             const url = `https://api.cardanoscan.io/api/v1/address/balance/${address}`;
             const res = await fetch(url, {
                 headers: {
