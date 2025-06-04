@@ -136,20 +136,15 @@ export const apis: API[] = [
     {
         name: 'XRP',
         getBalance: async (address: string) => {
-            // Using CryptoAPIs for XRP balance
-            const url = `https://rest.cryptoapis.io/blockchain-data/xrp-slice/mainnet/addresses/${address}/balance`;
-            const res = await fetch(url, {
-                headers: {
-                    'X-API-Key': CRYPTOAPIS_KEY,
-                    'Accept': 'application/json'
-                }
-            });
+            // Using xrpscan API for XRP balance
+            const url = `https://api.xrpscan.com/api/v1/account/${address}`;
+            const res = await fetch(url);
             if (!res.ok) {
                 throw new Error(`Failed to fetch XRP balance: ${res.statusText}`);
             }
             const data = await res.json();
             // The balance is in drops, convert to XRP (1 XRP = 1e6 drops)
-            const drops = data?.data?.item?.confirmedBalance?.amount;
+            const drops = data?.balance;
             if (!drops) return '0';
             return new BigNumber(drops).dividedBy(1e6).toString(10);
         },
