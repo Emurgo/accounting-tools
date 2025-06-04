@@ -160,7 +160,7 @@ export const apis: API[] = [
         name: 'ADA',
         getBalance: async (address: string) => {
             // Using cardanoscan API for Cardano (ADA) balance
-            const url = `https://api.cardanoscan.io/api/v1/address/balance/${address}`;
+            const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
             const res = await fetch(url, {
                 headers: {
                     'apiKey': CARDANOSCAN_KEY
