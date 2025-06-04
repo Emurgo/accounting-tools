@@ -144,7 +144,7 @@ export const apis: API[] = [
             }
             const data = await res.json();
             // The balance is in drops, convert to XRP (1 XRP = 1e6 drops)
-            const drops = data?.balance;
+            const drops = data?.Balance;
             if (!drops) return '0';
             return new BigNumber(drops).dividedBy(1e6).toString(10);
         },
