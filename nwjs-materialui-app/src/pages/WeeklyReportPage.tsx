@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Stack } from '@mui/material';
 import { getAllCategories } from '../db/rxdb';
 import { fetchBalancesForCategories, CategoryWithBalances } from '../api';
 import BigNumber from 'bignumber.js';
+import * as XLSX from 'xlsx';
 
 const ENTITY_OPTIONS = ['EMG', 'EMC'] as const;
 const LIQUID_OPTIONS = [true, false] as const;
@@ -37,12 +38,55 @@ const WeeklyReportPage: React.FC = () => {
             );
     };
 
+    const handleDownloadXLSX = () => {
+        if (!report) return;
+        const workbook = XLSX.utils.book_new();
+
+        ENTITY_OPTIONS.forEach(entity => {
+            LIQUID_OPTIONS.forEach(liquid => {
+                const addresses = getAddressesByEntityAndLiquid(report, entity, liquid);
+                if (addresses.length === 0) return;
+
+                const rows = addresses.map(address => {
+                    const price = new BigNumber(address.price || '0');
+                    const balance = new BigNumber(address.balance || '0');
+                    const totalValue = balance.multipliedBy(price).toFixed(2);
+                    return {
+                        Category: address.category,
+                        Address: address.address,
+                        Entity: address.entity,
+                        Liquid: address.liquid ? 'Yes' : 'No',
+                        Balance: address.balance,
+                        'Price (USD)': price.toString(),
+                        'Total Value (USD)': totalValue,
+                    };
+                });
+
+                const worksheet = XLSX.utils.json_to_sheet(rows);
+                const sheetName = `${entity}-${liquid ? 'Liquid' : 'Non-Liquid'}`;
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            });
+        });
+
+        XLSX.writeFile(workbook, 'weekly_report.xlsx');
+    };
+
     return (
         <div>
             <h2>Weekly Report</h2>
-            <Button variant="contained" color="primary" onClick={handleGenerateReport} disabled={loading}>
-                {loading ? 'Generating...' : 'Generate Report'}
-            </Button>
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                <Button variant="contained" color="primary" onClick={handleGenerateReport} disabled={loading}>
+                    {loading ? 'Generating...' : 'Generate Report'}
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={handleDownloadXLSX}
+                    disabled={!report || loading}
+                >
+                    Download as XLSX
+                </Button>
+            </Stack>
             {report &&
                 ENTITY_OPTIONS.map(entity =>
                     LIQUID_OPTIONS.map(liquid => {
