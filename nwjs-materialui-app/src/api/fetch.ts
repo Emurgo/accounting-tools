@@ -9,6 +9,8 @@ interface API {
 
 const CRYPTOAPIS_KEY = '5b8f18e02dbe444b4f86fccf2235549ec014cf82';
 const ETHERSCAN_KEY = '7W73YR7MHZZ9IVGRAG1UZPRPP7Q9AJVDA3';
+// https://solana.com/rpc
+const SOLANA_RPC_URL = 'https://white-neat-orb.solana-mainnet.quiknode.pro/01d191873234b69fde495a500fde3f65109aca8a/';
 
 export const apis: API[] = [
     {
@@ -82,7 +84,7 @@ export const apis: API[] = [
         name: 'SOL',
         getBalance: async (address: string) => {
             // Use @solana/web3.js to get SOL balance
-            const connection = new Connection('https://api.mainnet-beta.solana.com');
+            const connection = new Connection(SOLANA_RPC_URL);
             const pubkey = new PublicKey(address);
             const lamports = await connection.getBalance(pubkey);
             // Convert lamports to SOL (1 SOL = 1e9 lamports)
