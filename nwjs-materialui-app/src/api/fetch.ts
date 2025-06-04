@@ -13,20 +13,16 @@ export const apis: API[] = [
     {
         name: 'BTC',
         getBalance: async (address: string) => {
-            const url = `https://rest.cryptoapis.io/blockchain-data/bitcoin/mainnet/addresses/${address}/balance`;
-            const res = await fetch(url, {
-                headers: {
-                    'X-API-Key': CRYPTOAPIS_KEY,
-                    'Accept': 'application/json'
-                }
-            });
+            // Use blockchain.com API to get BTC balance (in satoshis)
+            const url = `https://blockchain.info/rawaddr/${address}`;
+            const res = await fetch(url);
             if (!res.ok) {
                 throw new Error(`Failed to fetch BTC balance: ${res.statusText}`);
             }
             const data = await res.json();
             // The balance is in satoshis, convert to BTC using BigNumber
-            const satoshis = data?.data?.item?.confirmedBalance?.amount;
-            if (!satoshis) return '0';
+            const satoshis = data?.final_balance;
+            if (typeof satoshis !== 'number') return '0';
             return new BigNumber(satoshis).dividedBy(1e8).toString(10);
         },
         getPriceUSD: async () => {
@@ -84,8 +80,8 @@ export const apis: API[] = [
     {
         name: 'SOL',
         getBalance: async (address: string) => {
-            // Using CryptoAPIs for Solana balance
-            const url = `https://rest.cryptoapis.io/blockchain-data/solana/mainnet/addresses/${address}/balance`;
+            // Using CryptoAPIs for Solana balance with the correct endpoint
+            const url = `https://rest.cryptoapis.io/addresses-latest/solana/mainnet/${address}/balance`;
             const res = await fetch(url, {
                 headers: {
                     'X-API-Key': CRYPTOAPIS_KEY,
