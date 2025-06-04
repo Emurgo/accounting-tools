@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
 import { getAllCategories } from '../db/rxdb';
 import { fetchBalancesForCategories, CategoryWithBalances } from '../api';
+import BigNumber from 'bignumber.js';
 
 const ENTITY_OPTIONS = ['EMG', 'EMC'] as const;
 const LIQUID_OPTIONS = [true, false] as const;
@@ -30,7 +31,8 @@ const WeeklyReportPage: React.FC = () => {
                     .filter(address => address.entity === entity && address.liquid === liquid)
                     .map(address => ({
                         ...address,
-                        category: category.name
+                        category: category.name,
+                        price: category.price
                     }))
             );
     };
@@ -60,18 +62,27 @@ const WeeklyReportPage: React.FC = () => {
                                                 <TableCell>Entity</TableCell>
                                                 <TableCell>Liquid</TableCell>
                                                 <TableCell>Balance</TableCell>
+                                                <TableCell>Price (USD)</TableCell>
+                                                <TableCell>Total Value (USD)</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {addresses.map(address => (
-                                                <TableRow key={address.category + address.address}>
-                                                    <TableCell>{address.category}</TableCell>
-                                                    <TableCell>{address.address}</TableCell>
-                                                    <TableCell>{address.entity}</TableCell>
-                                                    <TableCell>{address.liquid ? 'Yes' : 'No'}</TableCell>
-                                                    <TableCell>{address.balance}</TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {addresses.map(address => {
+                                                const price = new BigNumber(address.price || '0');
+                                                const balance = new BigNumber(address.balance || '0');
+                                                const totalValue = balance.multipliedBy(price).toFixed(2);
+                                                return (
+                                                    <TableRow key={address.category + address.address}>
+                                                        <TableCell>{address.category}</TableCell>
+                                                        <TableCell>{address.address}</TableCell>
+                                                        <TableCell>{address.entity}</TableCell>
+                                                        <TableCell>{address.liquid ? 'Yes' : 'No'}</TableCell>
+                                                        <TableCell>{address.balance}</TableCell>
+                                                        <TableCell>{price.toString()}</TableCell>
+                                                        <TableCell>{totalValue}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
