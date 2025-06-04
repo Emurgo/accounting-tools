@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
 import { getAllCategories } from '../db/rxdb';
 import { fetchBalancesForCategories, CategoryWithBalances } from '../api';
+
+const ENTITY_OPTIONS = ['EMG', 'EMC'] as const;
+const LIQUID_OPTIONS = [true, false] as const;
 
 const WeeklyReportPage: React.FC = () => {
     const [report, setReport] = useState<CategoryWithBalances[] | null>(null);
@@ -15,40 +18,68 @@ const WeeklyReportPage: React.FC = () => {
         setLoading(false);
     };
 
+    // Helper to filter addresses by entity and liquid
+    const getAddressesByEntityAndLiquid = (
+        report: CategoryWithBalances[],
+        entity: string,
+        liquid: boolean
+    ) => {
+        return report
+            .flatMap(category =>
+                category.addresses
+                    .filter(address => address.entity === entity && address.liquid === liquid)
+                    .map(address => ({
+                        ...address,
+                        category: category.name
+                    }))
+            );
+    };
+
     return (
         <div>
             <h2>Weekly Report</h2>
             <Button variant="contained" color="primary" onClick={handleGenerateReport} disabled={loading}>
                 {loading ? 'Generating...' : 'Generate Report'}
             </Button>
-            {report && (
-                <TableContainer component={Paper} style={{ marginTop: 32 }}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Category</TableCell>
-                                <TableCell>Address</TableCell>
-                                <TableCell>Entity</TableCell>
-                                <TableCell>Liquid</TableCell>
-                                <TableCell>Balance</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {report.flatMap(category =>
-                                category.addresses.map(address => (
-                                    <TableRow key={category.name + address.address}>
-                                        <TableCell>{category.name}</TableCell>
-                                        <TableCell>{address.address}</TableCell>
-                                        <TableCell>{address.entity}</TableCell>
-                                        <TableCell>{address.liquid ? 'Yes' : 'No'}</TableCell>
-                                        <TableCell>{address.balance}</TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            )}
+            {report &&
+                ENTITY_OPTIONS.map(entity =>
+                    LIQUID_OPTIONS.map(liquid => {
+                        const addresses = getAddressesByEntityAndLiquid(report, entity, liquid);
+                        if (addresses.length === 0) return null;
+                        return (
+                            <div key={`${entity}-${liquid}`} style={{ marginTop: 32 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    {entity} - {liquid ? 'Liquid' : 'Non-Liquid'}
+                                </Typography>
+                                <TableContainer component={Paper}>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Category</TableCell>
+                                                <TableCell>Address</TableCell>
+                                                <TableCell>Entity</TableCell>
+                                                <TableCell>Liquid</TableCell>
+                                                <TableCell>Balance</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {addresses.map(address => (
+                                                <TableRow key={address.category + address.address}>
+                                                    <TableCell>{address.category}</TableCell>
+                                                    <TableCell>{address.address}</TableCell>
+                                                    <TableCell>{address.entity}</TableCell>
+                                                    <TableCell>{address.liquid ? 'Yes' : 'No'}</TableCell>
+                                                    <TableCell>{address.balance}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </div>
+                        );
+                    })
+                )
+            }
         </div>
     );
 };
