@@ -158,12 +158,12 @@ export const apis: API[] = [
     {
         name: 'ADA',
         getBalance: async (address: string) => {
-            // Using CryptoAPIs for Cardano (ADA) balance
-            const url = `https://rest.cryptoapis.io/blockchain-data/cardano/mainnet/addresses/${address}/balance`;
+            // Using cardanoscan API for Cardano (ADA) balance
+            const CARDANOSCAN_KEY = 'YOUR_CARDANOSCAN_API_KEY'; // Replace with your actual Cardanoscan API key
+            const url = `https://api.cardanoscan.io/api/v1/address/balance/${address}`;
             const res = await fetch(url, {
                 headers: {
-                    'X-API-Key': CRYPTOAPIS_KEY,
-                    'Accept': 'application/json'
+                    'apiKey': CARDANOSCAN_KEY
                 }
             });
             if (!res.ok) {
@@ -171,7 +171,7 @@ export const apis: API[] = [
             }
             const data = await res.json();
             // The balance is in lovelace, convert to ADA (1 ADA = 1e6 lovelace)
-            const lovelace = data?.data?.item?.confirmedBalance?.amount;
+            const lovelace = data?.balance;
             if (!lovelace) return '0';
             return new BigNumber(lovelace).dividedBy(1e6).toString(10);
         },
