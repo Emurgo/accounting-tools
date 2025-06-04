@@ -100,22 +100,31 @@ export const apis: API[] = [
     {
         name: 'SUI',
         getBalance: async (address: string) => {
-            // Using CryptoAPIs for Sui balance
-            const url = `https://rest.cryptoapis.io/blockchain-data/sui/mainnet/addresses/${address}/balance`;
+            // Use Sui JSON-RPC API to get SUI balance
+            const url = 'https://fullnode.mainnet.sui.io:443';
+            const body = {
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'suix_getAllBalances',
+                params: [address]
+            };
             const res = await fetch(url, {
+                method: 'POST',
                 headers: {
-                    'X-API-Key': CRYPTOAPIS_KEY,
-                    'Accept': 'application/json'
-                }
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
             });
             if (!res.ok) {
                 throw new Error(`Failed to fetch SUI balance: ${res.statusText}`);
             }
             const data = await res.json();
-            // The balance is in MIST, convert to SUI (1 SUI = 1e9 MIST)
-            const mist = data?.data?.item?.confirmedBalance?.amount;
-            if (!mist) return '0';
-            return new BigNumber(mist).dividedBy(1e9).toString(10);
+            // Find the SUI coin balance (coinType === '0x2::sui::SUI')
+            const suiBalance = data?.result?.find((b: any) => b.coinType === '0x2::sui::SUI');
+            const amount = suiBalance?.totalBalance;
+            if (!amount) return '0';
+            // SUI uses 9 decimals
+            return new BigNumber(amount).dividedBy(1e9).toString(10);
         },
         getPriceUSD: async () => {
             const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd');
