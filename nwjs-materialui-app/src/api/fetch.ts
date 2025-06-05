@@ -165,8 +165,19 @@ export const apis: API[] = [
             let lovelace = '0';
 
             if (isStakeAddress) {
-                // Get stake key details
-                const url = `https://api.cardanoscan.io/api/v1/stake/${address}`;
+                // Convert bech32 stake address to hex for Cardanoscan API
+                // Cardanoscan expects the stake address in hex format for the /stake/{hex} endpoint
+                // You can use the 'bech32' package for conversion
+                // Example: npm install bech32
+                // import { fromWords, decode } from 'bech32';
+                // const hex = Buffer.from(fromWords(decode(address).words)).toString('hex');
+                // For this code, we'll assume a utility function bech32ToHex is available
+
+                const bech32 = await import('bech32');
+                const { words } = bech32.decode(address);
+                const hex = Buffer.from(bech32.fromWords(words)).toString('hex');
+
+                const url = `https://api.cardanoscan.io/api/v1/stake/${hex}`;
                 const res = await fetch(url, {
                     headers: {
                         'apiKey': CARDANOSCAN_KEY
