@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { Connection, PublicKey } from '@solana/web3.js';
-
+import bech32 from 'bech32';
 interface API {
     name: string;
     getBalance: (address: string) => Promise<string>;
@@ -166,7 +166,6 @@ export const apis: API[] = [
 
             if (isStakeAddress) {
                 // Convert bech32 stake address to hex for Cardanoscan API
-                const bech32 = await import('bech32');
                 const { words } = bech32.decode(address);
                 const hex = Buffer.from(bech32.fromWords(words)).toString('hex');
 
