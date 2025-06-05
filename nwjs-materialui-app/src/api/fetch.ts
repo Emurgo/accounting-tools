@@ -166,13 +166,6 @@ export const apis: API[] = [
 
             if (isStakeAddress) {
                 // Convert bech32 stake address to hex for Cardanoscan API
-                // Cardanoscan expects the stake address in hex format for the /stake/{hex} endpoint
-                // You can use the 'bech32' package for conversion
-                // Example: npm install bech32
-                // import { fromWords, decode } from 'bech32';
-                // const hex = Buffer.from(fromWords(decode(address).words)).toString('hex');
-                // For this code, we'll assume a utility function bech32ToHex is available
-
                 const bech32 = await import('bech32');
                 const { words } = bech32.decode(address);
                 const hex = Buffer.from(bech32.fromWords(words)).toString('hex');
@@ -187,8 +180,10 @@ export const apis: API[] = [
                     throw new Error(`Failed to fetch ADA stake balance: ${res.statusText}`);
                 }
                 const data = await res.json();
-                // The stake value is in data.stakeValue (in lovelace)
-                lovelace = data?.stakeValue ?? '0';
+                // Sum stake and rewardsAvailable (both in lovelace)
+                const stake = new BigNumber(data?.stake ?? '0');
+                const rewards = new BigNumber(data?.rewardsAvailable ?? '0');
+                lovelace = stake.plus(rewards).toString(10);
             } else {
                 // Get regular address balance
                 const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
