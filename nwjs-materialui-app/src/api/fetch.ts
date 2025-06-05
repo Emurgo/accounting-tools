@@ -170,7 +170,7 @@ export const apis: API[] = [
                 const { words } = bech32.decode(address);
                 const hex = Buffer.from(bech32.fromWords(words)).toString('hex');
 
-                const url = `https://api.cardanoscan.io/api/v1/stake/${hex}`;
+                const url = `https://api.cardanoscan.io/api/v1/rewardAccount?rewardAddress=${hex}`;
                 const res = await fetch(url, {
                     headers: {
                         'apiKey': CARDANOSCAN_KEY
