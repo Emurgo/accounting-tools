@@ -160,18 +160,40 @@ export const apis: API[] = [
         name: 'ADA',
         getBalance: async (address: string) => {
             // Using cardanoscan API for Cardano (ADA) balance
-            const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
-            const res = await fetch(url, {
-                headers: {
-                    'apiKey': CARDANOSCAN_KEY
+            // If address starts with "stake", treat as stake address and use stake key details endpoint
+            const isStakeAddress = address.startsWith('stake');
+            let lovelace = '0';
+
+            if (isStakeAddress) {
+                // Get stake key details
+                const url = `https://api.cardanoscan.io/api/v1/stake/${address}`;
+                const res = await fetch(url, {
+                    headers: {
+                        'apiKey': CARDANOSCAN_KEY
+                    }
+                });
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch ADA stake balance: ${res.statusText}`);
                 }
-            });
-            if (!res.ok) {
-                throw new Error(`Failed to fetch ADA balance: ${res.statusText}`);
+                const data = await res.json();
+                // The stake value is in data.stakeValue (in lovelace)
+                lovelace = data?.stakeValue ?? '0';
+            } else {
+                // Get regular address balance
+                const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
+                const res = await fetch(url, {
+                    headers: {
+                        'apiKey': CARDANOSCAN_KEY
+                    }
+                });
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch ADA balance: ${res.statusText}`);
+                }
+                const data = await res.json();
+                lovelace = data?.balance ?? '0';
             }
-            const data = await res.json();
+
             // The balance is in lovelace, convert to ADA (1 ADA = 1e6 lovelace)
-            const lovelace = data?.balance;
             if (!lovelace) return '0';
             return new BigNumber(lovelace).dividedBy(1e6).toString(10);
         },
