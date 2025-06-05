@@ -1,5 +1,6 @@
 import { apis } from './fetch';
 import type { Category } from '../types';
+import PromiseThrottle from 'promise-throttle';
 
 export const CATEGORIES = apis.map(api => api.name);
 
@@ -14,6 +15,12 @@ export type CategoryWithBalances = Omit<Category, 'addresses'> & {
     price: string; // USD price of the coin
 };
 
+// Throttle for price requests: 1 per second
+const priceThrottle = new PromiseThrottle({
+    requestsPerSecond: 0.1,
+    promiseImplementation: Promise
+});
+
 /**
  * Fetch balances for all addresses in each category.
  * Adds a 'balance' property to each address object and a 'price' property to the category.
@@ -26,15 +33,16 @@ export async function fetchBalancesForCategories(categories: Category[]): Promis
             const api = apiMap[category.name];
             if (!api) throw new Error(`No API found for category: ${category.name}`);
 
-            const [price, addressesWithBalances] = await Promise.all([
-                api.getPriceUSD(),
-                Promise.all(
-                    category.addresses.map(async (addr) => {
-                        const balance = await api.getBalance(addr.address);
-                        return { ...addr, balance };
-                    })
-                )
-            ]);
+            // Throttle price fetch
+            const pricePromise = priceThrottle.add(api.getPriceUSD);
+
+            const addressesWithBalances = await Promise.all(
+                category.addresses.map(async (addr) => {
+                    const balance = await api.getBalance(addr.address);
+                    return { ...addr, balance };
+                })
+            );
+            const price = await pricePromise;
             return { ...category, addresses: addressesWithBalances, price };
         })
     );
