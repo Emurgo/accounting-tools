@@ -17,7 +17,7 @@ const CARDANOSCAN_KEY = '18c8265c-845b-4a8d-9ebe-b92a734edc7a';
 const priceCache: Record<string, { value: string, timestamp: number }> = {};
 const PRICE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes in ms
 
-const COINGECKO_PRO_API_KEY = 'YOUR_COINGECKO_PRO_API_KEY'; // Replace with your Pro API key
+const COINGECKO_API_KEY = 'CG-qbbFhoNq7zgASQaYgchMRYnF';
 
 // Helper to cache getPriceUSD results by api name
 async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<string>): Promise<string> {
@@ -33,10 +33,10 @@ async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<stri
 
 // Helper to get price from CoinGecko Pro API
 async function getCoinGeckoProPrice(id: string): Promise<string> {
-    const url = `https://pro-api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`;
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`;
     const res = await fetch(url, {
         headers: {
-            'x-cg-pro-api-key': COINGECKO_PRO_API_KEY
+            'x-cg-demo-api-key': COINGECKO_API_KEY
         }
     });
     if (!res.ok) throw new Error(`Failed to fetch ${id} price from CoinGecko Pro`);
