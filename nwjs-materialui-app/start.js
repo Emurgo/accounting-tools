@@ -1,0 +1,17 @@
+import myReactSinglePageApp from './public/index.html';
+import { fetchCopperWalletDataBackend } from './src/api/copper';
+
+Bun.serve({
+  hostname: '0.0.0.0',
+  port: 3000,
+  tls: {
+    // generated using https://www.samltool.com/self_signed_certs.php
+    key: Bun.file("./key.pem"),
+    cert: Bun.file("./cert.pem"),
+  },
+  routes: {
+    '/copperWalletDataProxy': Response.json(await fetchCopperWalletDataBackend()),
+    "/*": myReactSinglePageApp,
+  },
+  env: 'inline',
+});

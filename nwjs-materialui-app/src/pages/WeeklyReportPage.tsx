@@ -32,8 +32,8 @@ const WeeklyReportPage: React.FC = () => {
                     .filter(address => address.entity === entity && address.liquid === liquid)
                     .map(address => ({
                         ...address,
-                        category: category.name,
-                        price: category.price
+                        category: address.currency,
+                        price: address.price
                     }))
             );
     };
