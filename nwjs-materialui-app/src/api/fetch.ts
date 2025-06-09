@@ -12,6 +12,42 @@ const ETHERSCAN_KEY = '7W73YR7MHZZ9IVGRAG1UZPRPP7Q9AJVDA3';
 // https://solana.com/rpc
 const SOLANA_RPC_URL = 'https://white-neat-orb.solana-mainnet.quiknode.pro/01d191873234b69fde495a500fde3f65109aca8a/';
 const CARDANOSCAN_KEY = '18c8265c-845b-4a8d-9ebe-b92a734edc7a';
+let copperWalletData: {
+  walletId: string,
+  portfolioId: string,
+  currency: 'ADA'|'API3'|'BTC'|'DOT'|'ETH'|'ETHW'|'SOL'|'STETH'|'SUI'|'USD'|'USDC'|'USDT'|'XRP' /*|  ... */, 
+  //mainCurrency: string,
+  //balance: string,
+  //stakeBalance: string,
+  totalBalance: string,
+  /*
+  "rebateBalance": "0",
+  "sharedRewardBalance": "0",
+  "reserve": "0.000000",
+  "locked": "0",
+  "available": "0.290000",
+  "secured": "0",
+  "createdAt": "1624416439812",
+  "createdBy": "10e33f41-930d-4bca-ab9c-5d2575914179",
+  "updatedAt": "1678700371945",
+  "extra": {},
+  "accountId": "8527ba9c-ea75-4969-81c0-303951872602",
+  "organizationId": "EMUR",
+  "portfolioType": "trading",
+  "_embedded": {
+    "depositTargets": [
+      {
+        "targetType": "crypto",
+        "depositTargetId": "suSb8IOCYtdZf2sf1YeV0YNp-ETH-ETH",
+        "mainCurrency": "ETH",
+        "address": "0xb7e4234faea27d3d00eb7d6bb22b0ccfaf328bec",
+        "status": "enabled"
+      }
+    ],
+    "pendingDepositTargets": []
+  },
+  */
+}[] = [];
 
 export const apis: API[] = [
     {
@@ -278,6 +314,17 @@ export const apis: API[] = [
             return data?.['usd-coin']?.usd?.toString() ?? '0';
         }
     },
+    {
+        name: 'copper',
+        getBalance: async (walletId: string) => {
+          const wallet = copperWalletData.find(wallet => walletId === walletId)
+          return wallet?.totalBalance || '0'
+        },
+        getPriceUSD: async () => {
+          const wallet = copperWalletData.find(wallet => walletId === walletId)
+          // wallet?.currency is 'ADA'|'API3'|'BTC'|'DOT'|'ETH'|'ETHW'|'SOL'|'STETH'|'SUI'|'USD'|'USDC'|'USDT'|'XRP'
+        },
+    },
 ];
 
 // I can't believe I have to write this utility function, but here we are.
@@ -286,4 +333,45 @@ function arrayToHexString(arr: number[]): string {
     const hex = (byte & 0xFF).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   }).join('');
+}
+
+async function fetchAndStoreCopperWallets() {
+  const targetUrl = '/platform/wallets'
+  const requestBody = ''
+  const currentMillis = String(Date.now())
+  const data = currentMillis + 'GET' + targetUrl + requestBody
+  const sig = await hmacSha256(process.env.COPPER_API_SECRETE, data)
+
+  const resp = await fetch(
+    'https://api.copper.co' + targetUrl,
+    {
+      headers: {
+        'X-Signature': sig,
+        'X-Timestamp': currentMillis,
+        Authorization: `ApiKey ${process.env.COPPER_API_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    }
+  )
+  const body = await resp.json()
+  copperWalletData = body
+}
+
+// google told me
+async function hmacSha256(key, message) {
+  const keyBuffer = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    keyBuffer,
+    new TextEncoder().encode(message)
+  );
+  return Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }

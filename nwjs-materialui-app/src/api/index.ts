@@ -1,4 +1,4 @@
-import { apis } from './fetch';
+import { apis, fetchAndStoreCopperWallets } from './fetch';
 import type { Category } from '../types';
 import PromiseThrottle from 'promise-throttle';
 
@@ -27,6 +27,10 @@ const priceThrottle = new PromiseThrottle({
  */
 export async function fetchBalancesForCategories(categories: Category[]): Promise<CategoryWithBalances[]> {
     const apiMap = Object.fromEntries(apis.map(api => [api.name, api]));
+  
+    if (CATEGORIES.includes('copper')) {
+      await fetchAndStoreCopperWallets()
+    }
 
     return Promise.all(
         categories.map(async (category) => {
