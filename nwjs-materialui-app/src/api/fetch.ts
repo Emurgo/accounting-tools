@@ -313,6 +313,16 @@ export const apis: API[] = [
             });
         }
     },
+    // placeholder so that the user can add copper wallets
+    {
+        name: 'copper',
+        getBalance: async (address: string) => {
+            throw new Error('Copper wallet balance is fetched via a separate API endpoint');
+        },
+        getPriceUSD: async () => {
+            throw new Error('Copper wallet does not have a price, it is a wallet service');
+        },
+    }
 ];
 
 // I can't believe I have to write this utility function, but here we are.
