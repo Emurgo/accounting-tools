@@ -317,12 +317,19 @@ export const apis: API[] = [
     {
         name: 'copper',
         getBalance: async (walletId: string) => {
-          const wallet = copperWalletData.find(wallet => walletId === walletId)
+          const wallet = copperWalletData.find(wallet => wallet.walletId === walletId)
           return wallet?.totalBalance || '0'
         },
         getPriceUSD: async () => {
-          const wallet = copperWalletData.find(wallet => walletId === walletId)
-          // wallet?.currency is 'ADA'|'API3'|'BTC'|'DOT'|'ETH'|'ETHW'|'SOL'|'STETH'|'SUI'|'USD'|'USDC'|'USDT'|'XRP'
+          // If there is at least one wallet, use its currency to find the price API
+          const wallet = copperWalletData[0];
+          if (!wallet) return '0';
+          // Try to find the corresponding API for the wallet's currency
+          const api = apis.find(api => api.name.toUpperCase() === wallet.currency.toUpperCase());
+          if (api && api.name !== 'copper') {
+            return api.getPriceUSD();
+          }
+          return '0';
         },
     },
 ];
