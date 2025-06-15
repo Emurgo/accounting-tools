@@ -1,6 +1,11 @@
 import BigNumber from 'bignumber.js';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { bech32 } from 'bech32';
+import BIP32Factory from 'bip32';
+import * as ecc from '@bitcoin-js/tiny-secp256k1-asmjs';
+import Buffer from 'buffer';
+window.Buffer = Buffer;
+//import bitcoin from 'bitcoinjs-lib';
 
 interface API {
     name: string;
@@ -287,6 +292,38 @@ export const apis: API[] = [
         getPriceUSD: async () => {
             throw new Error('Copper wallet does not have a price, it is a wallet service');
         },
+    },
+    {
+      name: 'Ledger wallet BTC',
+      getBalance: async (xpub: string) => {
+        const bitcoin = require('bitcoinjs-lib');
+        const bip32 = BIP32Factory(ecc);
+        const node = bip32.fromBase58(xpub);
+        
+        let total = new BigNumber('0');
+        let holeSize = 0;
+        for (let i = 0; i < 100; i++) {
+          const child = node.derivePath(`0/${i}`);
+          const publicKeyHash160 = bitcoin.crypto.hash160(Buffer.from(child.publicKey));
+          const words = bech32.toWords(publicKeyHash160);
+          words.unshift(0x00);
+          const address = bech32.encode('bc', words);
+          const balance = await apis.find(({ name }) => name === 'BTC').getBalance(address);
+          if (balance === '0') {
+            holeSize += 1;
+            if (holeSize === 20) {
+              break;
+            }
+          } else {
+            holeSize = 0;
+          }
+          total = total.plus(balance);
+        }
+        return total.toString();
+      },
+      getPriceUSD: async () => {
+        return await apis.find(({ name }) => name === 'BTC').getPriceUSD();
+      },
     }
 ];
 
