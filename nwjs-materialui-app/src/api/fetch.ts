@@ -52,6 +52,7 @@ async function getCoinGeckoProPrice(id: string): Promise<string> {
 export const apis: API[] = [
     {
         name: 'BTC',
+        /*
         getBalance: async (address: string) => {
             // Use blockchain.com API to get BTC balance (in satoshis)
             const url = `https://blockchain.info/rawaddr/${address}`;
@@ -65,6 +66,22 @@ export const apis: API[] = [
             if (typeof satoshis !== 'number') return '0';
             return new BigNumber(satoshis).dividedBy(1e8).toString(10);
         },
+        */
+    getBalance: async (address: string) => {
+        // Use Blockstream API to get BTC balance (in satoshis)
+        const url = `https://blockstream.info/api/address/${address}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`Failed to fetch BTC balance: ${res.statusText}`);
+        }
+        const data = await res.json();
+        // The confirmed balance is in data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum
+        const funded = data.chain_stats?.funded_txo_sum ?? 0;
+        const spent = data.chain_stats?.spent_txo_sum ?? 0;
+        const satoshis = funded - spent;
+        // Convert satoshis to BTC
+        return new BigNumber(satoshis).dividedBy(1e8).toString(10);
+    },
         getPriceUSD: async () => {
             return getCachedPriceUSD('BTC', async () => getCoinGeckoProPrice('bitcoin'));
         }
@@ -304,20 +321,37 @@ export const apis: API[] = [
         let holeSize = 0;
         for (let i = 0; i < 100; i++) {
           const child = node.derivePath(`0/${i}`);
+          /*
+            // blockstream does not support bech32 btc address
           const publicKeyHash160 = bitcoin.crypto.hash160(Buffer.from(child.publicKey));
           const words = bech32.toWords(publicKeyHash160);
           words.unshift(0x00);
           const address = bech32.encode('bc', words);
-          const balance = await apis.find(({ name }) => name === 'BTC').getBalance(address);
-          if (balance === '0') {
+          */
+          // blockstream only support base58 adddress
+          const network = bitcoin.networks.bitcoin;
+
+          const { address } = bitcoin.payments.p2pkh({
+            pubkey: Buffer.from(child.publicKey), //https://github.com/bitcoinjs/bitcoinjs-lib/issues/2209
+            network: network,
+          });
+
+          const url = `https://blockstream.info/api/address/${address}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch BTC balance: ${res.statusText}`);
+          }
+          const data = await res.json();
+
+          if (data.chain_stats.funded_txo_count === 0) {
             holeSize += 1;
-            if (holeSize === 20) {
+            if (holeSize === 1) {
               break;
             }
           } else {
             holeSize = 0;
           }
-          total = total.plus(balance);
+          total = total.plus(data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum);
         }
         return total.toString();
       },
