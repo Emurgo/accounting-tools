@@ -12,6 +12,7 @@ const MonthlyReportPage: React.FC = () => {
             const report = await generateMonthlyReport();
             setResult(report);
         } catch (e) {
+            console.error(e);
             setResult({ error: (e as Error).message });
         }
         setLoading(false);

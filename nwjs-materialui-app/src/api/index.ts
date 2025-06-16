@@ -1,6 +1,12 @@
 import { apis, fetchCopperWalletData } from './fetch';
 import type { Category } from '../types';
 import PromiseThrottle from 'promise-throttle';
+import monthlyReportTemplateXlsxUrl from '../../secrets/monthly-report-template.xlsx'
+//import * as XLSX from 'xlsx'
+import { apis } from './fetch'
+import Excel from 'exceljs'
+import fileDownload from 'js-file-download'
+import BigNumber from 'bignumber.js'
 
 export const CATEGORIES = apis.map(api => api.name);
 
@@ -74,4 +80,99 @@ export async function fetchBalancesForCategories(categories: Category[]): Promis
             }
         })
     );
+}
+
+const coinCol = 'F'
+const addrCol = 'J'
+const balanceCol = 'G'
+const priceCol = 'H'
+const valueCol = 'I'
+const updateTsCol = 'A'
+
+/* sheetjs does not preserve style
+export async function generateMonthlyReport() {
+  const file = await (await fetch(monthlyReportTemplateXlsxUrl)).arrayBuffer()
+  const workbook = await XLSX.read(file)
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const lastUpdateTsValue = (new Date()).toISOString()
+
+  for (let row = 1; row < 100; row++) {
+    function setValue(col, value) {
+      sheet[`${col}${row}`] = { v: value, t: 'n' }
+    }
+
+    const coin = sheet[`${coinCol}${row}`]?.v
+    const addr = sheet[`${addrCol}${row}`]?.v
+
+    const api = apis.find(({ name }) => name === coin)
+    if (!api) {
+      continue
+    }
+    if (!(typeof addr === 'string' && /^\w+$/.test(addr))) {
+      continue
+    }
+
+    try {
+      const balance = '1'
+      const price = '1'
+      const value = '1'
+
+      setValue(balanceCol, balance)
+      setValue(priceCol, price)
+      setValue(valueCol, value)
+      setValue(updateTsCol, lastUpdateTsValue)
+    } catch {
+    }
+
+    if (coin === undefined && addr === undefined) {
+      break
+    }
+  }
+
+  XLSX.writeFile(workbook, 'monthly-report.xlsx')
+}
+*/
+
+export async function generateMonthlyReport() {
+  const data = await (await fetch(monthlyReportTemplateXlsxUrl)).arrayBuffer()
+
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(data);
+  const sheet = workbook.worksheets[0]
+
+  const lastUpdateTsValue = (new Date()).toISOString()
+
+  for (let row = 1; row < 100; row++) {
+    function getCell(col) {
+      const cell = sheet.getRow(row).getCell(col)
+      return cell
+    }
+    const coin = getCell(coinCol)?.value
+    const addr = getCell(addrCol)?.value
+
+    const api = apis.find(({ name }) => name === coin)
+    if (!api) {
+      continue
+    }
+    if (!(typeof addr === 'string' && /^\w+$/.test(addr))) {
+      continue
+    }
+
+
+    const balance = await api.getBalance(addr)
+    const price = await priceThrottle.add(api.getPriceUSD)
+    const value = (new BigNumber(balance)).multipliedBy(price).toString()
+
+    getCell(balanceCol).value = balance
+    getCell(priceCol).value = price
+    getCell(valueCol).value = value
+    getCell(updateTsCol).value = lastUpdateTsValue
+
+
+    if (coin === null && addr === null) {
+      break
+    }
+  }
+
+  fileDownload(await workbook.xlsx.writeBuffer(),'monthly-report.xlsx')
 }

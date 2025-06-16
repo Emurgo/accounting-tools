@@ -31,6 +31,15 @@ const NavigationDrawer: React.FC = () => {
                 >
                     <ListItemText primary="Weekly report" />
                 </ListItem>
+                <ListItem
+                    button
+                    component={Link}
+                    to="/monthly-report"
+                    sx={isActive('/monthly-report') ? { bgcolor: 'action.selected' } : {}}
+                >
+                    <ListItemText primary="Monthly report" />
+                </ListItem>
+                {/* Additional navigation items can be added here */}
             </List>
         </Drawer>
     );
