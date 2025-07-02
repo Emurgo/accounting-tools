@@ -10,7 +10,7 @@ Bun.serve({
     cert: Bun.file("./cert.pem"),
   },
   routes: {
-    '/copperWalletDataProxy': Response.json(await fetchCopperWalletDataBackend()),
+    '/copperWalletDataProxy': fetchCopperWalletDataBackend,
     "/*": myReactSinglePageApp,
   },
   env: 'inline',

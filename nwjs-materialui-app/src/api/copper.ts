@@ -7,19 +7,25 @@ export async function fetchCopperWalletDataBackend(): Promise<CopperWalletData[]
   const data = currentMillis + 'GET' + targetUrl + requestBody
   const sig = await hmacSha256(COPPER_API_SECRET, data)
 
+  const headers = {
+    'X-Signature': sig,
+    'X-Timestamp': currentMillis,
+    Authorization: `ApiKey ${COPPER_API_KEY}`,
+    'Content-Type': 'application/json',
+  }
+
+  console.log('curl', Object.keys(headers).map(k=>`-H '${k}:${headers[k]}'`).join(' '), 'https://api.copper.co' + targetUrl);
+
   const resp = await fetch(
     'https://api.copper.co' + targetUrl,
     {
-      headers: {
-        'X-Signature': sig,
-        'X-Timestamp': currentMillis,
-        Authorization: `ApiKey ${COPPER_API_KEY}`,
-        'Content-Type': 'application/json',
-      }
+      headers
     }
   )
   const body = await resp.json()
-  return body.wallets
+
+  console.log('%s', JSON.stringify(body, null, 2))
+  return Response.json(body.wallets)
 }
 
 // google told me
