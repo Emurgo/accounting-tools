@@ -31,6 +31,11 @@ const adaBalanceThrottle = new PromiseThrottle({
     promiseImplementation: Promise
 });
 
+const etherscanThrottle = new PromiseThrottle({
+    requestsPerSecond: 1,
+    promiseImplementation: Promise
+});
+
 // Helper to cache getPriceUSD results by api name
 async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<string>): Promise<string> {
     const now = Date.now();
@@ -96,6 +101,7 @@ export const apis: API[] = [
     {
         name: 'API3',
         getBalance: async (address: string) => {
+          return etherscanThrottle.add(async () => {
             // API3 contract address (mainnet)
             const contractAddress = '0x0b38210ea11411557c13457d4da7dc6ea731b88a';
             const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
@@ -108,6 +114,7 @@ export const apis: API[] = [
             const wei = data?.result;
             if (!wei) return '0';
             return new BigNumber(wei).dividedBy(1e18).toString(10);
+          })
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('API3', async () => getCoinGeckoProPrice('api3'));
@@ -116,6 +123,7 @@ export const apis: API[] = [
     {
         name: 'ETH',
         getBalance: async (address: string) => {
+          return etherscanThrottle.add(async () => {
             const url = `https://api.etherscan.io/api?module=account&action=balance&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
             const res = await fetch(url);
             if (!res.ok) {
@@ -126,6 +134,7 @@ export const apis: API[] = [
             const wei = data?.result;
             if (!wei) return '0';
             return new BigNumber(wei).dividedBy(1e18).toString(10);
+          })
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('ETH', async () => getCoinGeckoProPrice('ethereum'));
@@ -250,6 +259,7 @@ export const apis: API[] = [
     {
         name: 'stETH',
         getBalance: async (address: string) => {
+          return etherscanThrottle.add(async () => {
             // stETH contract address (mainnet)
             const contractAddress = '0xae7ab96520de3a18e5e111b5eaab095312d7fe84';
             const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
@@ -262,6 +272,7 @@ export const apis: API[] = [
             const wei = data?.result;
             if (!wei) return '0';
             return new BigNumber(wei).dividedBy(1e18).toString(10);
+          })
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('stETH', async () => getCoinGeckoProPrice('staked-ether'));
@@ -270,6 +281,7 @@ export const apis: API[] = [
     {
         name: 'USDT',
         getBalance: async (address: string) => {
+          return etherscanThrottle.add(async () => {
             // USDT (Tether) ERC20 contract address (mainnet)
             const contractAddress = '0xdac17f958d2ee523a2206206994597c13d831ec7';
             const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
@@ -282,6 +294,7 @@ export const apis: API[] = [
             const raw = data?.result;
             if (!raw) return '0';
             return new BigNumber(raw).dividedBy(1e6).toString(10);
+          })
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('USDT', async () => getCoinGeckoProPrice('tether'));
@@ -290,6 +303,7 @@ export const apis: API[] = [
     {
         name: 'USDC',
         getBalance: async (address: string) => {
+          return etherscanThrottle.add(async () => {
             // USDC (USD Coin) ERC20 contract address (mainnet)
             const contractAddress = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
             const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
@@ -302,6 +316,7 @@ export const apis: API[] = [
             const raw = data?.result;
             if (!raw) return '0';
             return new BigNumber(raw).dividedBy(1e6).toString(10);
+          })
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('USDC', async () => getCoinGeckoProPrice('usd-coin'));
