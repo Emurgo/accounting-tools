@@ -26,7 +26,7 @@ export type CategoryWithBalances = Omit<Category, 'addresses'> & {
 
 // Throttle for price requests: 1 per second
 const priceThrottle = new PromiseThrottle({
-    requestsPerSecond: 0.45,
+    requestsPerSecond: 0.2,
     promiseImplementation: Promise
 });
 
