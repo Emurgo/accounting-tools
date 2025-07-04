@@ -143,12 +143,37 @@ export const apis: API[] = [
     {
         name: 'SOL',
         getBalance: async (address: string) => {
-            // Use @solana/web3.js to get SOL balance
+            // Use @solana/web3.js to get SOL balance and stake
             const connection = new Connection(SOLANA_RPC_URL);
+
+            // Get main account balance (lamports)
             const pubkey = new PublicKey(address);
-            const lamports = await connection.getBalance(pubkey);
+            const balanceLamports = await connection.getBalance(pubkey);
+
+            // Get stake accounts for this address
+            const stakeAccounts = await connection.getParsedProgramAccounts(
+                // Stake program id
+                new PublicKey('Stake11111111111111111111111111111111111111'),
+                {
+                    filters: [
+                        {
+                            memcmp: {
+                                offset: 12, // Stake account's authorized staker is at offset 12
+                                bytes: address
+                            }
+                        }
+                    ]
+                }
+            );
+
+            // Sum up all stake account balances (lamports)
+            const stakeLamports = stakeAccounts.reduce((sum, acc) => sum + (acc.account.lamports || 0), 0);
+
+            // Total lamports = balance + stake
+            const totalLamports = balanceLamports + stakeLamports;
+
             // Convert lamports to SOL (1 SOL = 1e9 lamports)
-            return new BigNumber(lamports).dividedBy(1e9).toString(10);
+            return new BigNumber(totalLamports).dividedBy(1e9).toString(10);
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('SOL', async () => getCoinGeckoProPrice('solana'));
