@@ -411,7 +411,7 @@ export const apis: API[] = [
         getBalance: async (address: string) => {
             return etherscanThrottle.add(async () => {
                 // CTRL (ERC20) contract address (mainnet)
-                const contractAddress = '0x6fB3e0A217407EFFf7Ca062D46c26E5d60a14d69'; // Replace with actual CTRL contract address if different
+                const contractAddress = '0xe50E009Ddb1A4d8Ec668EAc9D8b2dF1F96348707'; // Replace with actual CTRL contract address if different
                 const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
                 const res = await fetch(url);
                 if (!res.ok) {
@@ -425,7 +425,7 @@ export const apis: API[] = [
             });
         },
         getPriceUSD: async () => {
-            return getCachedPriceUSD('CTRL', async () => getCoinGeckoProPrice('ctrl'));
+            return getCachedPriceUSD('CTRL', async () => getCoinGeckoProPrice('ctrl-wallet'));
         }
     },
 ];
