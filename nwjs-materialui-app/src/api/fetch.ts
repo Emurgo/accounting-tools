@@ -167,7 +167,7 @@ export const apis: API[] = [
             );
 
             // Sum up all stake account balances (lamports)
-            const stakeLamports = stakeAccounts.reduce((sum, acc) => sum + (acc.account.lamports || 0), 0);
+            const stakeLamports = stakeAccounts.reduce((sum, acc) => sum + (Number(acc.account.data.parsed.info.stake.delegation.stake) || 0), 0);
 
             // Total lamports = balance + stake
             const totalLamports = balanceLamports + stakeLamports;
