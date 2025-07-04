@@ -25,6 +25,12 @@ const PRICE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes in ms
 
 const COINGECKO_API_KEY = 'CG-qbbFhoNq7zgASQaYgchMRYnF';
 
+// Throttle ADA balance requests to avoid rate limits (max 1 request per second)
+const adaBalanceThrottle = new PromiseThrottle({
+    requestsPerSecond: 1,
+    promiseImplementation: Promise
+});
+
 // Helper to cache getPriceUSD results by api name
 async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<string>): Promise<string> {
     const now = Date.now();
@@ -200,14 +206,11 @@ export const apis: API[] = [
                 let lovelace = '0';
 
                 if (isStakeAddress) {
-                    const { decode, fromWords } = await import('bech32');
-                    const { words } = decode(address);
-                    const bytes = fromWords(words);
-                    const hex = Array.from(bytes)
-                        .map((b) => b.toString(16).padStart(2, '0'))
-                        .join('');
+                // Convert bech32 stake address to hex for Cardanoscan API
+                const { words } = bech32.decode(address);
+                const hex = arrayToHexString(bech32.fromWords(words));
 
-                    const url = `https://api.cardanoscan.io/api/v1/stake/${hex}`;
+                const url = `https://api.cardanoscan.io/api/v1/rewardAccount?rewardAddress=${hex}`;
                     const res = await fetch(url, {
                         headers: {
                             'apiKey': CARDANOSCAN_KEY
@@ -217,10 +220,12 @@ export const apis: API[] = [
                         throw new Error(`Failed to fetch ADA stake balance: ${res.statusText}`);
                     }
                     const data = await res.json();
+                    // Sum stake and rewardsAvailable (both in lovelace)
                     const stake = new BigNumber(data?.stake ?? '0');
                     const rewards = new BigNumber(data?.rewardsAvailable ?? '0');
                     lovelace = stake.plus(rewards).toString(10);
                 } else {
+                    // Get regular address balance
                     const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
                     const res = await fetch(url, {
                         headers: {
