@@ -405,7 +405,29 @@ export const apis: API[] = [
       getPriceUSD: async () => {
         return await apis.find(({ name }) => name === 'BTC').getPriceUSD();
       },
-    }
+    },
+    {
+        name: 'CTRL',
+        getBalance: async (address: string) => {
+            return etherscanThrottle.add(async () => {
+                // CTRL (ERC20) contract address (mainnet)
+                const contractAddress = '0x6fB3e0A217407EFFf7Ca062D46c26E5d60a14d69'; // Replace with actual CTRL contract address if different
+                const url = `https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=${contractAddress}&address=${address}&tag=latest&apikey=${ETHERSCAN_KEY}`;
+                const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch CTRL balance: ${res.statusText}`);
+                }
+                const data = await res.json();
+                // CTRL uses 18 decimals (most ERC20 tokens)
+                const raw = data?.result;
+                if (!raw) return '0';
+                return new BigNumber(raw).dividedBy(1e18).toString(10);
+            });
+        },
+        getPriceUSD: async () => {
+            return getCachedPriceUSD('CTRL', async () => getCoinGeckoProPrice('ctrl'));
+        }
+    },
 ];
 
 // I can't believe I have to write this utility function, but here we are.
