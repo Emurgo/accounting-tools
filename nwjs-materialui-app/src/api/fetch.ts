@@ -6,6 +6,7 @@ import * as ecc from '@bitcoin-js/tiny-secp256k1-asmjs';
 import Buffer from 'buffer';
 window.Buffer = Buffer;
 //import bitcoin from 'bitcoinjs-lib';
+import PromiseThrottle from 'promise-throttle';
 
 interface API {
     name: string;
@@ -193,48 +194,49 @@ export const apis: API[] = [
     {
         name: 'ADA',
         getBalance: async (address: string) => {
-            // Using cardanoscan API for Cardano (ADA) balance
-            // If address starts with "stake", treat as stake address and use stake key details endpoint
-            const isStakeAddress = address.startsWith('stake');
-            let lovelace = '0';
+            return adaBalanceThrottle.add(async () => {
+                // Using cardanoscan API for Cardano (ADA) balance
+                const isStakeAddress = address.startsWith('stake');
+                let lovelace = '0';
 
-            if (isStakeAddress) {
-                // Convert bech32 stake address to hex for Cardanoscan API
-                const { words } = bech32.decode(address);
-                const hex = arrayToHexString(bech32.fromWords(words));
+                if (isStakeAddress) {
+                    const { decode, fromWords } = await import('bech32');
+                    const { words } = decode(address);
+                    const bytes = fromWords(words);
+                    const hex = Array.from(bytes)
+                        .map((b) => b.toString(16).padStart(2, '0'))
+                        .join('');
 
-                const url = `https://api.cardanoscan.io/api/v1/rewardAccount?rewardAddress=${hex}`;
-                const res = await fetch(url, {
-                    headers: {
-                        'apiKey': CARDANOSCAN_KEY
+                    const url = `https://api.cardanoscan.io/api/v1/stake/${hex}`;
+                    const res = await fetch(url, {
+                        headers: {
+                            'apiKey': CARDANOSCAN_KEY
+                        }
+                    });
+                    if (!res.ok) {
+                        throw new Error(`Failed to fetch ADA stake balance: ${res.statusText}`);
                     }
-                });
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch ADA stake balance: ${res.statusText}`);
-                }
-                const data = await res.json();
-                // Sum stake and rewardsAvailable (both in lovelace)
-                const stake = new BigNumber(data?.stake ?? '0');
-                const rewards = new BigNumber(data?.rewardsAvailable ?? '0');
-                lovelace = stake.plus(rewards).toString(10);
-            } else {
-                // Get regular address balance
-                const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
-                const res = await fetch(url, {
-                    headers: {
-                        'apiKey': CARDANOSCAN_KEY
+                    const data = await res.json();
+                    const stake = new BigNumber(data?.stake ?? '0');
+                    const rewards = new BigNumber(data?.rewardsAvailable ?? '0');
+                    lovelace = stake.plus(rewards).toString(10);
+                } else {
+                    const url = `https://api.cardanoscan.io/api/v1/address/balance?address=${address}`;
+                    const res = await fetch(url, {
+                        headers: {
+                            'apiKey': CARDANOSCAN_KEY
+                        }
+                    });
+                    if (!res.ok) {
+                        throw new Error(`Failed to fetch ADA balance: ${res.statusText}`);
                     }
-                });
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch ADA balance: ${res.statusText}`);
+                    const data = await res.json();
+                    lovelace = data?.balance ?? '0';
                 }
-                const data = await res.json();
-                lovelace = data?.balance ?? '0';
-            }
 
-            // The balance is in lovelace, convert to ADA (1 ADA = 1e6 lovelace)
-            if (!lovelace) return '0';
-            return new BigNumber(lovelace).dividedBy(1e6).toString(10);
+                if (!lovelace) return '0';
+                return new BigNumber(lovelace).dividedBy(1e6).toString(10);
+            });
         },
         getPriceUSD: async () => {
             return getCachedPriceUSD('ADA', async () => getCoinGeckoProPrice('cardano'));
