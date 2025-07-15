@@ -1,5 +1,7 @@
 import React from 'react';
-import { Drawer, List, ListItem, ListItemText, AppBar, Toolbar, Typography } from '@mui/material';
+import { Drawer, List, AppBar, Toolbar, Typography } from '@mui/material';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
 import { Link, useLocation } from 'react-router-dom';
 
 const NavigationDrawer: React.FC = () => {
@@ -38,6 +40,9 @@ const NavigationDrawer: React.FC = () => {
                     sx={isActive('/monthly-report') ? { bgcolor: 'action.selected' } : {}}
                 >
                     <ListItemText primary="Monthly report" />
+                </ListItem>
+                <ListItem button component={Link} to="/transactions">
+                    <ListItemText primary="Transactions" />
                 </ListItem>
                 {/* Additional navigation items can be added here */}
             </List>
