@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box } from '@mui/material';
+import { Button, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Stack } from '@mui/material';
 import { getErc20Transactions } from '../api/fetch';
+import * as XLSX from 'xlsx';
 
 const DEFAULT_ADDRESS = '0x378b6f2610526217122eced61f9d64097eb58010';
 const TOKEN_ADDRESS = '0xc2132d05d31c914a87c6611c10748aeb04b58e8f'; // Polygon USDT
@@ -23,10 +24,30 @@ const TransactionsPage: React.FC = () => {
             setTransactions(txs);
         } catch (e) {
             setTransactions([]);
-            throw e;
-        } finally {
-          setLoading(false);
         }
+        setLoading(false);
+    };
+
+    const handleDownload = () => {
+        const rows = transactions.map(tx => {
+            const decimals = Number(tx.tokenDecimal ?? 6);
+            const value = (Number(tx.value) / Math.pow(10, decimals)).toLocaleString();
+            let displayValue = '?';
+            if (tx.from?.toLowerCase() === address.toLowerCase()) {
+                displayValue = `(${value})`;
+            } else if (tx.to?.toLowerCase() === address.toLowerCase()) {
+                displayValue = value;
+            }
+            return {
+                hash: tx.hash,
+                date: formatDate(tx.timeStamp),
+                value: displayValue,
+            };
+        });
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+        XLSX.writeFile(workbook, 'polygon_usdt_transactions.xlsx');
     };
 
     return (
@@ -34,7 +55,7 @@ const TransactionsPage: React.FC = () => {
             <Typography variant="h5" gutterBottom>
                 Polygon USDT
             </Typography>
-            <Box display="flex" alignItems="center" gap={2} mb={2}>
+            <Stack direction="row" spacing={2} mb={2}>
                 <TextField
                     label="Address"
                     value={address}
@@ -45,7 +66,14 @@ const TransactionsPage: React.FC = () => {
                 <Button variant="contained" onClick={handleQuery} disabled={loading}>
                     {loading ? 'Querying...' : 'Query Transactions'}
                 </Button>
-            </Box>
+                <Button
+                    variant="outlined"
+                    onClick={handleDownload}
+                    disabled={transactions.length === 0}
+                >
+                    Download
+                </Button>
+            </Stack>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
