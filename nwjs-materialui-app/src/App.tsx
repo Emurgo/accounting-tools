@@ -4,6 +4,7 @@ import NavigationDrawer from './components/NavigationDrawer';
 import ManageAssetsPage from './pages/ManageAssetsPage';
 import WeeklyReportPage from './pages/WeeklyReportPage';
 import MonthlyReportPage from './pages/MonthlyReportPage';
+import TransactionsPage from './pages/TransactionsPage';
 import { Grid } from '@mui/material';
 
 const drawerWidth = 240;
@@ -21,6 +22,7 @@ const App: React.FC = () => {
                             <Route path="/manage-assets" component={ManageAssetsPage} />
                             <Route path="/weekly-report" component={WeeklyReportPage} />
                             <Route path="/monthly-report" component={MonthlyReportPage} />
+                            <Route path="/transactions" component={TransactionsPage} />
                             {/* Additional routes can be added here */}
                         </Switch>
                     </div>
@@ -31,3 +33,18 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+const SIDEBAR_ITEMS = [
+    // ...other sidebar items...
+    { label: 'Transactions', path: '/transactions' },
+];
+
+// In your router or sidebar rendering logic, add:
+// <Route path="/transactions" element={<TransactionsPage />} />
+
+// And in your sidebar/menu component, add:
+// {SIDEBAR_ITEMS.map(item => (
+//     <ListItem button key={item.path} component={Link} to={item.path}>
+//         <ListItemText primary={item.label} />
+//     </ListItem>
+// ))}
