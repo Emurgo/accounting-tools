@@ -31,22 +31,42 @@ const TransactionsPage: React.FC = () => {
     };
 
     const handleDownload = () => {
+        // Prepare rows without header
         const rows = transactions.map(tx => {
             const decimals = Number(tx.tokenDecimal ?? 6);
             const value = (Number(tx.value) / Math.pow(10, decimals)).toLocaleString();
             let displayValue = '?';
+            let isRed = false;
             if (tx.from?.toLowerCase() === address.toLowerCase()) {
                 displayValue = `(${value})`;
+                isRed = true;
             } else if (tx.to?.toLowerCase() === address.toLowerCase()) {
                 displayValue = value;
             }
-            return {
-                hash: tx.hash,
-                date: formatDate(tx.timeStamp),
-                value: displayValue,
-            };
+            return [tx.hash, formatDate(tx.timeStamp), displayValue, isRed];
         });
-        const worksheet = XLSX.utils.json_to_sheet(rows);
+
+        // Create worksheet without header
+        const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+        // Apply red color to value cells with parenthesis
+        rows.forEach((row, i) => {
+            if (row[3]) {
+                const cellRef = XLSX.utils.encode_cell({ c: 2, r: i }); // value column
+                if (!worksheet[cellRef]) return;
+                worksheet[cellRef].s = {
+                    font: { color: { rgb: "FF0000" } }
+                };
+            }
+        });
+
+        // Remove the 4th column (isRed) from the worksheet
+        Object.keys(worksheet)
+            .filter(key => key[0] !== '!' && XLSX.utils.decode_cell(key).c === 3)
+            .forEach(key => delete worksheet[key]);
+
+        worksheet['!cols'] = [{}, {}, {}]; // Only 3 columns
+
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
         XLSX.writeFile(workbook, 'polygon_usdt_transactions.xlsx');
