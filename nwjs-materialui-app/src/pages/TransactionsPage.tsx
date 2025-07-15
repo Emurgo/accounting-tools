@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, Stack } from '@mui/material';
 import { getErc20Transactions } from '../api/fetch';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import fileDownload from 'js-file-download';
 
 const DEFAULT_ADDRESS = '0x378b6f2610526217122eced61f9d64097eb58010';
 const TOKEN_ADDRESS = '0xc2132d05d31c914a87c6611c10748aeb04b58e8f'; // Polygon USDT
@@ -30,9 +31,12 @@ const TransactionsPage: React.FC = () => {
        }
     };
 
-    const handleDownload = () => {
-        // Prepare rows without header
-        const rows = transactions.map(tx => {
+    const handleDownload = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Transactions');
+
+        // No header row
+        transactions.forEach(tx => {
             const decimals = Number(tx.tokenDecimal ?? 6);
             const value = (Number(tx.value) / Math.pow(10, decimals)).toLocaleString();
             let displayValue = '?';
@@ -43,33 +47,21 @@ const TransactionsPage: React.FC = () => {
             } else if (tx.to?.toLowerCase() === address.toLowerCase()) {
                 displayValue = value;
             }
-            return [tx.hash, formatDate(tx.timeStamp), displayValue, isRed];
-        });
-
-        // Create worksheet without header
-        const worksheet = XLSX.utils.aoa_to_sheet(rows);
-
-        // Apply red color to value cells with parenthesis
-        rows.forEach((row, i) => {
-            if (row[3]) {
-                const cellRef = XLSX.utils.encode_cell({ c: 2, r: i }); // value column
-                if (!worksheet[cellRef]) return;
-                worksheet[cellRef].s = {
-                    font: { color: { rgb: "FF0000" } }
-                };
+            const row = worksheet.addRow([tx.hash, formatDate(tx.timeStamp), displayValue]);
+            if (isRed) {
+                row.getCell(3).font = { color: { argb: 'FFFF0000' } };
             }
         });
 
-        // Remove the 4th column (isRed) from the worksheet
-        Object.keys(worksheet)
-            .filter(key => key[0] !== '!' && XLSX.utils.decode_cell(key).c === 3)
-            .forEach(key => delete worksheet[key]);
+        // Set column widths for better readability
+        worksheet.columns = [
+            { width: 48 },
+            { width: 12 },
+            { width: 18 }
+        ];
 
-        worksheet['!cols'] = [{}, {}, {}]; // Only 3 columns
-
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
-        XLSX.writeFile(workbook, 'polygon_usdt_transactions.xlsx');
+        const buffer = await workbook.xlsx.writeBuffer();
+        fileDownload(buffer, 'polygon_usdt_transactions.xlsx');
     };
 
     return (
