@@ -24,8 +24,10 @@ const TransactionsPage: React.FC = () => {
             setTransactions(txs);
         } catch (e) {
             setTransactions([]);
-        }
-        setLoading(false);
+            throw e;
+        } finally {
+          setLoading(false);
+       }
     };
 
     const handleDownload = () => {
