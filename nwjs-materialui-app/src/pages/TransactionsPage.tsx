@@ -23,8 +23,10 @@ const TransactionsPage: React.FC = () => {
             setTransactions(txs);
         } catch (e) {
             setTransactions([]);
+            throw e;
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
     };
 
     return (

@@ -480,7 +480,7 @@ export async function fetchCopperWalletData(): Promise<CopperWalletData[]> {
   return resp.json()
 }
 
-export async function getErc20Transactions(chainId: string, tokenAdddress: string, address: string): { hash: string, value: string, tokenDecimal: string, from: string, to: string, timestamp: string }[] {
+export async function getErc20Transactions(chainId: string, tokenAddress: string, address: string): { hash: string, value: string, tokenDecimal: string, from: string, to: string, timestamp: string }[] {
     const resp = await fetch(`https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&contractaddress=${tokenAddress}&address=${address}&sort=desc&apikey=${ETHERSCAN_KEY}`);
     if (!resp.ok) {
         throw new Error(`Failed to fetch ERC20 transactions: ${resp.statusText}`);
