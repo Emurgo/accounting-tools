@@ -14,7 +14,8 @@ export const rewardEarningCardanoWalletSchema: RxJsonSchema<RewardEarningCardano
     primaryKey: 'stakeAddress',
     properties: {
         stakeAddress: {
-            type: 'string'
+            type: 'string',
+            maxLength: 1000,
         },
         annotation: {
             type: 'string'
