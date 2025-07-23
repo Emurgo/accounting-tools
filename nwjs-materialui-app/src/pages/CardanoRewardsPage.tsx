@@ -124,11 +124,11 @@ const CardanoRewardsPage: React.FC = () => {
                         onChange={val => val && setMonth(val)}
                         disableFuture
                     />
-                    <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
-                        Add Reward Wallet
-                    </Button>
                     <Button variant="contained" color="secondary" onClick={handleQueryRewards} disabled={queryLoading}>
                         {queryLoading ? 'Querying...' : 'Query'}
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
+                        Add Wallet
                     </Button>
                 </Stack>
                 <TableContainer component={Paper} sx={{ mb: 2 }}>
