@@ -37,7 +37,7 @@ const etherscanThrottle = new PromiseThrottle({
 });
 
 // Helper to cache getPriceUSD results by api name
-async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<string>): Promise<string> {
+export async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<string>): Promise<string> {
     const now = Date.now();
     const cached = priceCache[apiName];
     if (cached && now - cached.timestamp < PRICE_CACHE_TTL) {
@@ -49,7 +49,7 @@ async function getCachedPriceUSD(apiName: string, fetchPrice: () => Promise<stri
 }
 
 // Helper to get price from CoinGecko Pro API
-async function getCoinGeckoProPrice(id: string): Promise<string> {
+export async function getCoinGeckoProPrice(id: string): Promise<string> {
     const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`;
     const res = await fetch(url, {
         headers: {

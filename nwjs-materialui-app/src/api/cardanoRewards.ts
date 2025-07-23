@@ -16,7 +16,7 @@ function getEpochForDate(date: Date): number {
   return Math.floor((date.valueOf() - EPOCH.startTime.valueOf()) / 1000 / SECS_PER_EPOCH) + EPOCH.number
 }
 
-function getEpochsForMonth(year: number, month: number): { first: number, last: number } {
+export function getEpochsForMonth(year: number, month: number): { first: number, last: number } {
   return {
     first: getEpochForDate(new Date(year, month - 1)) + 1,
     last: getEpochForDate(month === 12 ? new Date(year + 1, 1) : new Date(year, month)) + 1
@@ -25,7 +25,7 @@ function getEpochsForMonth(year: number, month: number): { first: number, last: 
 
 const API_KEY = 'mainnettssNeYQtpuod4KVg8F7SDr5kW27mb7hJ'
 
-async function getRewardHistory(stakeAddr: string): { epoch: number, amount: string, pool_id: string }[] {
+export async function getRewardHistory(stakeAddr: string): { epoch: number, amount: string, pool_id: string }[] {
   const resp = await fetch(
     `https://cardano-mainnet.blockfrost.io/api/v0/accounts/${stakeAddr}/rewards?order=desc`,
     {

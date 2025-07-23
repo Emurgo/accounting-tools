@@ -85,7 +85,7 @@ const CardanoRewardsPage: React.FC = () => {
         setQueryLoading(true);
         setRewards([]);
         try {
-            const { firstEpoch, lastEpoch } = await getEpochsForMonth(month.year(), month.month() + 1); // month is 0-based
+            const { first, last } = await getEpochsForMonth(month.year(), month.month() + 1); // month is 0-based
             const adaPrice = await getCachedPriceUSD('ADA', async () => getCoinGeckoProPrice('cardano'));
             const selectedAddresses = wallets.filter(w => selected[w.stakeAddress]).map(w => w.stakeAddress);
 
@@ -93,7 +93,7 @@ const CardanoRewardsPage: React.FC = () => {
             for (const stakeAddress of selectedAddresses) {
                 const history = await getRewardHistory(stakeAddress);
                 // Filter by epoch
-                const filtered = history.filter((r: any) => r.epoch >= firstEpoch && r.epoch <= lastEpoch);
+                const filtered = history.filter((r: any) => r.epoch >= first && r.epoch <= last);
                 filtered.forEach((r: any) => {
                     allRewards.push({
                         stakeAddress,
