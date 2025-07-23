@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, IconButton, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox } from '@mui/material';
 import { Delete, Edit } from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
 import { getDb, getAll, RewardEarningCardanoWallet } from '../db/rewardEarningCardanoWallet';
+import { getEpochsForMonth, getRewardHistory } from '../api/cardanoRewards';
+import { getCachedPriceUSD, getCoinGeckoProPrice } from '../api/fetch';
+import BigNumber from 'bignumber.js';
 
 const CardanoRewardsPage: React.FC = () => {
     const [wallets, setWallets] = useState<RewardEarningCardanoWallet[]>([]);
@@ -11,6 +16,9 @@ const CardanoRewardsPage: React.FC = () => {
     const [stakeAddress, setStakeAddress] = useState('');
     const [annotation, setAnnotation] = useState('');
     const [selected, setSelected] = useState<Record<string, boolean>>({});
+    const [month, setMonth] = useState<Dayjs>(dayjs().subtract(1, 'month'));
+    const [rewards, setRewards] = useState<any[]>([]);
+    const [queryLoading, setQueryLoading] = useState(false);
 
     const fetchWallets = async () => {
         setLoading(true);
@@ -71,15 +79,56 @@ const CardanoRewardsPage: React.FC = () => {
         setSelected(sel);
     };
 
+    const handleQueryRewards = async () => {
+        setQueryLoading(true);
+        setRewards([]);
+        try {
+            const { firstEpoch, lastEpoch } = await getEpochsForMonth(month.year(), month.month() + 1); // month is 0-based
+            const adaPrice = await getCachedPriceUSD('ADA', async () => getCoinGeckoProPrice('cardano'));
+            const selectedAddresses = wallets.filter(w => selected[w.stakeAddress]).map(w => w.stakeAddress);
+
+            let allRewards: any[] = [];
+            for (const stakeAddress of selectedAddresses) {
+                const history = await getRewardHistory(stakeAddress);
+                // Filter by epoch
+                const filtered = history.filter((r: any) => r.epoch >= firstEpoch && r.epoch <= lastEpoch);
+                filtered.forEach((r: any) => {
+                    allRewards.push({
+                        stakeAddress,
+                        epoch: r.epoch,
+                        amountADA: new BigNumber(r.amount).dividedBy(1e6).toString(10),
+                        amountUSD: new BigNumber(r.amount).dividedBy(1e6).multipliedBy(adaPrice).toFixed(2)
+                    });
+                });
+            }
+            setRewards(allRewards);
+        } catch (e) {
+            setRewards([]);
+        }
+        setQueryLoading(false);
+    };
+
     return (
         <Box>
             <Typography variant="h5" gutterBottom>
                 Cardano Rewards
             </Typography>
-            <Button variant="contained" color="primary" onClick={() => handleOpenDialog()} sx={{ mb: 2 }}>
-                Add Reward Wallet
-            </Button>
-            <TableContainer component={Paper}>
+            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+                <DatePicker
+                    views={['year', 'month']}
+                    label="Select Month"
+                    value={month}
+                    onChange={val => val && setMonth(val)}
+                    disableFuture
+                />
+                <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
+                    Add Reward Wallet
+                </Button>
+                <Button variant="contained" color="secondary" onClick={handleQueryRewards} disabled={queryLoading}>
+                    {queryLoading ? 'Querying...' : 'Query'}
+                </Button>
+            </Stack>
+            <TableContainer component={Paper} sx={{ mb: 2 }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -112,6 +161,31 @@ const CardanoRewardsPage: React.FC = () => {
                                     <IconButton onClick={() => handleOpenDialog(wallet)}><Edit /></IconButton>
                                     <IconButton onClick={() => handleDelete(wallet.stakeAddress)}><Delete /></IconButton>
                                 </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <Typography variant="h6" gutterBottom>
+                Rewards by Epoch
+            </Typography>
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Stake Address</TableCell>
+                            <TableCell>Epoch</TableCell>
+                            <TableCell>ADA</TableCell>
+                            <TableCell>USD</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {rewards.map((r, idx) => (
+                            <TableRow key={idx}>
+                                <TableCell>{r.stakeAddress}</TableCell>
+                                <TableCell>{r.epoch}</TableCell>
+                                <TableCell>{r.amountADA}</TableCell>
+                                <TableCell>{r.amountUSD}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
