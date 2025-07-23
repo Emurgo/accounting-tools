@@ -5,6 +5,7 @@ import ManageAssetsPage from './pages/ManageAssetsPage';
 import WeeklyReportPage from './pages/WeeklyReportPage';
 import MonthlyReportPage from './pages/MonthlyReportPage';
 import TransactionsPage from './pages/TransactionsPage';
+import CardanoRewardsPage from './pages/CardanoRewardsPage';
 import { Grid } from '@mui/material';
 
 const drawerWidth = 240;
@@ -23,6 +24,7 @@ const App: React.FC = () => {
                             <Route path="/weekly-report" component={WeeklyReportPage} />
                             <Route path="/monthly-report" component={MonthlyReportPage} />
                             <Route path="/transactions" component={TransactionsPage} />
+                            <Route path="/cardano-rewards" component={CardanoRewardsPage} />
                             {/* Additional routes can be added here */}
                         </Switch>
                     </div>
@@ -37,10 +39,12 @@ export default App;
 const SIDEBAR_ITEMS = [
     // ...other sidebar items...
     { label: 'Transactions', path: '/transactions' },
+    { label: 'Cardano Rewards', path: '/cardano-rewards' },
 ];
 
 // In your router or sidebar rendering logic, add:
 // <Route path="/transactions" element={<TransactionsPage />} />
+// <Route path="/cardano-rewards" element={<CardanoRewardsPage />} />
 
 // And in your sidebar/menu component, add:
 // {SIDEBAR_ITEMS.map(item => (

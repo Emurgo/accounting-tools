@@ -36,6 +36,9 @@ const NavigationDrawer: React.FC = () => {
                 <ListItem button component={Link} to="/transactions">
                     <ListItemText primary="Transactions" />
                 </ListItem>
+                <ListItem button component={Link} to="/cardano-rewards">
+                    <ListItemText primary="Cardano Rewards" />
+                </ListItem>
                 {/* Additional navigation items can be added here */}
             </List>
         </Drawer>
