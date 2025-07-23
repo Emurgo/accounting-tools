@@ -2,8 +2,6 @@ import { apis, fetchCopperWalletData } from './fetch';
 import type { Category } from '../types';
 import PromiseThrottle from 'promise-throttle';
 import monthlyReportTemplateXlsxUrl from '../../secrets/monthly-report-template.xlsx'
-//import * as XLSX from 'xlsx'
-import { apis } from './fetch'
 import Excel from 'exceljs'
 import fileDownload from 'js-file-download'
 import BigNumber from 'bignumber.js'
@@ -143,7 +141,7 @@ export async function generateMonthlyReport() {
   const lastUpdateTsValue = (new Date()).toISOString()
 
   for (let row = 1; row < 100; row++) {
-    function getCell(col) {
+    const getCell = (col: string) => {
       const cell = sheet.getRow(row).getCell(col)
       return cell
     }
