@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, IconButton, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox } from '@mui/material';
 import { Delete, Edit } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { getDb, getAll, RewardEarningCardanoWallet } from '../db/rewardEarningCardanoWallet';
 import { getEpochsForMonth, getRewardHistory } from '../api/cardanoRewards';
@@ -109,113 +111,115 @@ const CardanoRewardsPage: React.FC = () => {
     };
 
     return (
-        <Box>
-            <Typography variant="h5" gutterBottom>
-                Cardano Rewards
-            </Typography>
-            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-                <DatePicker
-                    views={['year', 'month']}
-                    label="Select Month"
-                    value={month}
-                    onChange={val => val && setMonth(val)}
-                    disableFuture
-                />
-                <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
-                    Add Reward Wallet
-                </Button>
-                <Button variant="contained" color="secondary" onClick={handleQueryRewards} disabled={queryLoading}>
-                    {queryLoading ? 'Querying...' : 'Query'}
-                </Button>
-            </Stack>
-            <TableContainer component={Paper} sx={{ mb: 2 }}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell padding="checkbox">
-                                <Checkbox
-                                    checked={wallets.length > 0 && wallets.every(w => selected[w.stakeAddress])}
-                                    indeterminate={wallets.some(w => selected[w.stakeAddress]) && !wallets.every(w => selected[w.stakeAddress])}
-                                    onChange={e => handleSelectAll(e.target.checked)}
-                                />
-                                <Button size="small" onClick={() => handleSelectAll(true)}>All</Button>
-                                <Button size="small" onClick={() => handleSelectAll(false)}>None</Button>
-                            </TableCell>
-                            <TableCell>Stake Address</TableCell>
-                            <TableCell>Annotation</TableCell>
-                            <TableCell>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {wallets.map(wallet => (
-                            <TableRow key={wallet.stakeAddress}>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box>
+                <Typography variant="h5" gutterBottom>
+                    Cardano Rewards
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+                    <DatePicker
+                        views={['year', 'month']}
+                        label="Select Month"
+                        value={month}
+                        onChange={val => val && setMonth(val)}
+                        disableFuture
+                    />
+                    <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
+                        Add Reward Wallet
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleQueryRewards} disabled={queryLoading}>
+                        {queryLoading ? 'Querying...' : 'Query'}
+                    </Button>
+                </Stack>
+                <TableContainer component={Paper} sx={{ mb: 2 }}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
                                 <TableCell padding="checkbox">
                                     <Checkbox
-                                        checked={!!selected[wallet.stakeAddress]}
-                                        onChange={e => handleSelect(wallet.stakeAddress, e.target.checked)}
+                                        checked={wallets.length > 0 && wallets.every(w => selected[w.stakeAddress])}
+                                        indeterminate={wallets.some(w => selected[w.stakeAddress]) && !wallets.every(w => selected[w.stakeAddress])}
+                                        onChange={e => handleSelectAll(e.target.checked)}
                                     />
+                                    <Button size="small" onClick={() => handleSelectAll(true)}>All</Button>
+                                    <Button size="small" onClick={() => handleSelectAll(false)}>None</Button>
                                 </TableCell>
-                                <TableCell>{wallet.stakeAddress}</TableCell>
-                                <TableCell>{wallet.annotation}</TableCell>
-                                <TableCell>
-                                    <IconButton onClick={() => handleOpenDialog(wallet)}><Edit /></IconButton>
-                                    <IconButton onClick={() => handleDelete(wallet.stakeAddress)}><Delete /></IconButton>
-                                </TableCell>
+                                <TableCell>Stake Address</TableCell>
+                                <TableCell>Annotation</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Typography variant="h6" gutterBottom>
-                Rewards by Epoch
-            </Typography>
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Stake Address</TableCell>
-                            <TableCell>Epoch</TableCell>
-                            <TableCell>ADA</TableCell>
-                            <TableCell>USD</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rewards.map((r, idx) => (
-                            <TableRow key={idx}>
-                                <TableCell>{r.stakeAddress}</TableCell>
-                                <TableCell>{r.epoch}</TableCell>
-                                <TableCell>{r.amountADA}</TableCell>
-                                <TableCell>{r.amountUSD}</TableCell>
+                        </TableHead>
+                        <TableBody>
+                            {wallets.map(wallet => (
+                                <TableRow key={wallet.stakeAddress}>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            checked={!!selected[wallet.stakeAddress]}
+                                            onChange={e => handleSelect(wallet.stakeAddress, e.target.checked)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>{wallet.stakeAddress}</TableCell>
+                                    <TableCell>{wallet.annotation}</TableCell>
+                                    <TableCell>
+                                        <IconButton onClick={() => handleOpenDialog(wallet)}><Edit /></IconButton>
+                                        <IconButton onClick={() => handleDelete(wallet.stakeAddress)}><Delete /></IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <Typography variant="h6" gutterBottom>
+                    Rewards by Epoch
+                </Typography>
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Stake Address</TableCell>
+                                <TableCell>Epoch</TableCell>
+                                <TableCell>ADA</TableCell>
+                                <TableCell>USD</TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>{editWallet ? 'Edit Reward Wallet' : 'Add Reward Wallet'}</DialogTitle>
-                <DialogContent>
-                    <Stack spacing={2} sx={{ mt: 1 }}>
-                        <TextField
-                            label="Stake Address"
-                            value={stakeAddress}
-                            onChange={e => setStakeAddress(e.target.value)}
-                            fullWidth
-                            disabled={!!editWallet}
-                        />
-                        <TextField
-                            label="Annotation"
-                            value={annotation}
-                            onChange={e => setAnnotation(e.target.value)}
-                            fullWidth
-                        />
-                    </Stack>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button onClick={handleSave} variant="contained">Save</Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+                        </TableHead>
+                        <TableBody>
+                            {rewards.map((r, idx) => (
+                                <TableRow key={idx}>
+                                    <TableCell>{r.stakeAddress}</TableCell>
+                                    <TableCell>{r.epoch}</TableCell>
+                                    <TableCell>{r.amountADA}</TableCell>
+                                    <TableCell>{r.amountUSD}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <Dialog open={openDialog} onClose={handleCloseDialog}>
+                    <DialogTitle>{editWallet ? 'Edit Reward Wallet' : 'Add Reward Wallet'}</DialogTitle>
+                    <DialogContent>
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            <TextField
+                                label="Stake Address"
+                                value={stakeAddress}
+                                onChange={e => setStakeAddress(e.target.value)}
+                                fullWidth
+                                disabled={!!editWallet}
+                            />
+                            <TextField
+                                label="Annotation"
+                                value={annotation}
+                                onChange={e => setAnnotation(e.target.value)}
+                                fullWidth
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseDialog}>Cancel</Button>
+                        <Button onClick={handleSave} variant="contained">Save</Button>
+                    </DialogActions>
+                </Dialog>
+            </Box>
+        </LocalizationProvider>
     );
 };
 
