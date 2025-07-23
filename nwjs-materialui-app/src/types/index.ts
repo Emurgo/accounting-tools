@@ -1,4 +1,4 @@
-import type { CategoryDocType } from '../db/rxdb';
+import type { CategoryDocType } from '../db/categories';
 
 // Category is the document type from the schema
 export type Category = CategoryDocType;
