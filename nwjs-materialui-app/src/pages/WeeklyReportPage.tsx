@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Stack } from '@mui/material';
-import { getAllCategories } from '../db/rxdb';
+import { getAllCategories } from '../db/categories';
 import { fetchBalancesForCategories, CategoryWithBalances } from '../api';
 import BigNumber from 'bignumber.js';
 import * as XLSX from 'xlsx';

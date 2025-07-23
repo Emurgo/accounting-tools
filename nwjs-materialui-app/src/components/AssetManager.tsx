@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, TextField, List, MenuItem } from '@mui/material';
-import { getDb } from '../db/rxdb';
+import { getDb } from '../db/categories';
 import { Category } from '../types';
 import CategoryItem from './CategoryItem';
 import { CATEGORIES } from '../api';

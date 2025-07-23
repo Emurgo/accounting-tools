@@ -3,7 +3,7 @@ import { ListItem, ListItemText, ListItemSecondaryAction, IconButton, TextField,
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import { getDb } from '../db/rxdb';
+import { getDb } from '../db/categories';
 import { Category } from '../types';
 
 interface CategoryItemProps {
