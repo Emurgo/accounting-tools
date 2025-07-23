@@ -110,6 +110,13 @@ const CardanoRewardsPage: React.FC = () => {
         setQueryLoading(false);
     };
 
+    // Group rewards by stake address for display
+    const groupedRewards: Record<string, any[]> = {};
+    rewards.forEach(r => {
+        if (!groupedRewards[r.stakeAddress]) groupedRewards[r.stakeAddress] = [];
+        groupedRewards[r.stakeAddress].push(r);
+    });
+
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box>
@@ -172,28 +179,52 @@ const CardanoRewardsPage: React.FC = () => {
                 <Typography variant="h6" gutterBottom>
                     Rewards by Epoch
                 </Typography>
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Stake Address</TableCell>
-                                <TableCell>Epoch</TableCell>
-                                <TableCell>ADA</TableCell>
-                                <TableCell>USD</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {rewards.map((r, idx) => (
-                                <TableRow key={idx}>
-                                    <TableCell>{r.stakeAddress}</TableCell>
-                                    <TableCell>{r.epoch}</TableCell>
-                                    <TableCell>{r.amountADA}</TableCell>
-                                    <TableCell>{r.amountUSD}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                {Object.keys(groupedRewards).map(stakeAddress => {
+                    const wallet = wallets.find(w => w.stakeAddress === stakeAddress);
+                    return (
+                        <Box key={stakeAddress} mb={3}>
+                            <Box
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'primary.main',
+                                    borderRadius: 2,
+                                    p: 1,
+                                    mb: 1,
+                                    bgcolor: 'background.paper',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mr: 2 }}>
+                                    {stakeAddress}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {wallet?.annotation}
+                                </Typography>
+                            </Box>
+                            <TableContainer component={Paper}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Epoch</TableCell>
+                                            <TableCell>ADA</TableCell>
+                                            <TableCell>USD</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {groupedRewards[stakeAddress].map((r, idx) => (
+                                            <TableRow key={idx}>
+                                                <TableCell>{r.epoch}</TableCell>
+                                                <TableCell>{r.amountADA}</TableCell>
+                                                <TableCell>{r.amountUSD}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Box>
+                    );
+                })}
                 <Dialog open={openDialog} onClose={handleCloseDialog}>
                     <DialogTitle>{editWallet ? 'Edit Reward Wallet' : 'Add Reward Wallet'}</DialogTitle>
                     <DialogContent>
