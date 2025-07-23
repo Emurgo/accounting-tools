@@ -94,6 +94,9 @@ const CardanoRewardsPage: React.FC = () => {
                 const history = await getRewardHistory(stakeAddress);
                 // Filter by epoch
                 const filtered = history.filter((r: any) => r.epoch >= first && r.epoch <= last);
+                if (filtered.length !== last - first + 1) {
+                    throw new Error(`Missing rewards for stake address ${stakeAddress} in epochs ${first}-${last}`);
+                }
                 filtered.forEach((r: any) => {
                     allRewards.push({
                         stakeAddress,
