@@ -20,18 +20,10 @@ const NavigationDrawer: React.FC = () => {
                 <ListItem
                     button
                     component={Link}
-                    to="/manage-assets"
-                    sx={isActive('/manage-assets') ? { bgcolor: 'action.selected' } : {}}
-                >
-                    <ListItemText primary="Manage Assets" />
-                </ListItem>
-                <ListItem
-                    button
-                    component={Link}
                     to="/weekly-report"
                     sx={isActive('/weekly-report') ? { bgcolor: 'action.selected' } : {}}
                 >
-                    <ListItemText primary="Weekly report" />
+                    <ListItemText primary="Weekly Report" />
                 </ListItem>
                 <ListItem
                     button

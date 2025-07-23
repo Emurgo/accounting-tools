@@ -4,11 +4,13 @@ import { getAllCategories } from '../db/categories';
 import { fetchBalancesForCategories, CategoryWithBalances } from '../api';
 import BigNumber from 'bignumber.js';
 import * as XLSX from 'xlsx';
+import { useHistory } from 'react-router-dom';
 
 const ENTITY_OPTIONS = ['EMG', 'EMC'] as const;
 const LIQUID_OPTIONS = [true, false] as const;
 
 const WeeklyReportPage: React.FC = () => {
+    const history = useHistory();
     const [report, setReport] = useState<CategoryWithBalances[] | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -75,7 +77,12 @@ const WeeklyReportPage: React.FC = () => {
         <div>
             <h2>Weekly Report</h2>
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                <Button variant="contained" color="primary" onClick={handleGenerateReport} disabled={loading}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleGenerateReport}
+                    disabled={loading}
+                >
                     {loading ? 'Generating...' : 'Generate Report'}
                 </Button>
                 <Button
@@ -85,6 +92,13 @@ const WeeklyReportPage: React.FC = () => {
                     disabled={!report || loading}
                 >
                     Download as XLSX
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="info"
+                    onClick={() => history.push('/manage-assets')}
+                >
+                    Manage Assets
                 </Button>
             </Stack>
             {report &&
