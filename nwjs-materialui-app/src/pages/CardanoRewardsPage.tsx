@@ -171,9 +171,6 @@ const CardanoRewardsPage: React.FC = () => {
                     <Button variant="contained" color="secondary" onClick={handleQueryRewards} disabled={queryLoading}>
                         {queryLoading ? 'Querying...' : 'Query'}
                     </Button>
-                    <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
-                        Add Wallet
-                    </Button>
                     <Button
                         variant="outlined"
                         color="success"
@@ -181,6 +178,10 @@ const CardanoRewardsPage: React.FC = () => {
                         disabled={rewards.length === 0}
                     >
                         Download XLSX
+                    </Button>
+                    <Box flex={1} />
+                    <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
+                        Add Wallet
                     </Button>
                 </Stack>
                 <TableContainer component={Paper} sx={{ mb: 2 }}>
