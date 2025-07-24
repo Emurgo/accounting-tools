@@ -9,6 +9,8 @@ import { getDb, getAll, RewardEarningCardanoWallet } from '../db/rewardEarningCa
 import { getEpochsForMonth, getRewardHistory } from '../api/cardanoRewards';
 import { getCachedPriceUSD, getCoinGeckoProPrice } from '../api/fetch';
 import BigNumber from 'bignumber.js';
+import ExcelJS from 'exceljs';
+import fileDownload from 'js-file-download';
 
 const CardanoRewardsPage: React.FC = () => {
     const [wallets, setWallets] = useState<RewardEarningCardanoWallet[]>([]);
@@ -120,6 +122,38 @@ const CardanoRewardsPage: React.FC = () => {
         groupedRewards[r.stakeAddress].push(r);
     });
 
+    const handleDownloadXLSX = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Cardano Rewards');
+
+        // For each address, add a header row and then epoch rows
+        Object.keys(groupedRewards).forEach(stakeAddress => {
+            const wallet = wallets.find(w => w.stakeAddress === stakeAddress);
+            // Header row (address + annotation)
+            const headerRow = sheet.addRow([`${stakeAddress} ${wallet?.annotation ? `(${wallet.annotation})` : ''}`]);
+            headerRow.font = { bold: true };
+            headerRow.outlineLevel = 0;
+            // Column headers
+            sheet.addRow(['Epoch', 'ADA', 'USD']);
+            // Epoch rows
+            groupedRewards[stakeAddress].forEach(r => {
+                sheet.addRow([r.epoch, r.amountADA, r.amountUSD]);
+            });
+            // Empty row for spacing
+            sheet.addRow([]);
+        });
+
+        // Adjust column widths
+        sheet.columns = [
+            { width: 20 },
+            { width: 16 },
+            { width: 16 }
+        ];
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        fileDownload(buffer, 'cardano_rewards.xlsx');
+    };
+
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box>
@@ -139,6 +173,14 @@ const CardanoRewardsPage: React.FC = () => {
                     </Button>
                     <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
                         Add Wallet
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="success"
+                        onClick={handleDownloadXLSX}
+                        disabled={rewards.length === 0}
+                    >
+                        Download XLSX
                     </Button>
                 </Stack>
                 <TableContainer component={Paper} sx={{ mb: 2 }}>
@@ -179,6 +221,7 @@ const CardanoRewardsPage: React.FC = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                {/* Rewards by Epoch grouped display */}
                 <Typography variant="h6" gutterBottom>
                     Rewards by Epoch
                 </Typography>
