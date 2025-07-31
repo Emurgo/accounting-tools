@@ -7,6 +7,7 @@ import Buffer from 'buffer';
 window.Buffer = Buffer;
 //import bitcoin from 'bitcoinjs-lib';
 import PromiseThrottle from 'promise-throttle';
+import { net } from 'web3';
 
 interface API {
     name: string;
@@ -482,11 +483,11 @@ export async function fetchCopperWalletData(): Promise<CopperWalletData[]> {
 
 export async function getErc20Transactions(
     chainId: string, tokenAddress: string, address: string
-): Promise<{ hash: string, value: string, tokenDecimal: string, from: string, to: string, timestamp: string }[]> {
+): Promise<{ hash: string, value: string, tokenDecimal: string, from: string, to: string, timestamp: string, fee: string, netValue: string, walletBalance: string, price: string }[]> {
     const resp = await fetch(`https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&contractaddress=${tokenAddress}&address=${address}&sort=desc&apikey=${ETHERSCAN_KEY}`);
     if (!resp.ok) {
         throw new Error(`Failed to fetch ERC20 transactions: ${resp.statusText}`);
     }
     const data = await resp.json();
-    return data.result;
+    return data.result.map(row => ({ ...row, fee: '0', netValue: '0', walletBalance: '0', price: '0' }));
 }

@@ -15,7 +15,7 @@ function formatDate(timestamp: string | number) {
 
 const TransactionsPage: React.FC = () => {
     const [address, setAddress] = useState(DEFAULT_ADDRESS);
-    const [transactions, setTransactions] = useState<any[]>([]);
+    const [transactions, setTransactions] = useState<Awaited<ReturnType<typeof getErc20Transactions>>>([]);
     const [loading, setLoading] = useState(false);
 
     const handleQuery = async () => {
@@ -60,7 +60,7 @@ const TransactionsPage: React.FC = () => {
 
             const row = worksheet.addRow([
                 tx.hash,
-                formatDate(tx.timeStamp),
+                formatDate(tx.timestamp),
                 displayValue,
                 fee,
                 netValue,
@@ -154,7 +154,7 @@ const TransactionsPage: React.FC = () => {
                             return (
                                 <TableRow key={tx.hash}>
                                     <TableCell>{tx.hash}</TableCell>
-                                    <TableCell>{formatDate(tx.timeStamp)}</TableCell>
+                                    <TableCell>{formatDate(tx.timestamp)}</TableCell>
                                     <TableCell style={style}>{displayValue}</TableCell>
                                     <TableCell>{fee}</TableCell>
                                     <TableCell>{netValue}</TableCell>
