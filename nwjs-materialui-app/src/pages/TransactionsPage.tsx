@@ -27,15 +27,19 @@ const TransactionsPage: React.FC = () => {
             setTransactions([]);
             throw e;
         } finally {
-          setLoading(false);
-       }
+            setLoading(false);
+        }
     };
 
     const handleDownload = async () => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Transactions');
 
-        // No header row
+        // No header row, but add column headers for clarity
+        worksheet.addRow([
+            'Hash', 'Date', 'Value', 'Fee', 'Net Value', 'Wallet Balance', 'Price', 'Value (USD)', 'Fee (USD)'
+        ]);
+
         transactions.forEach(tx => {
             const decimals = Number(tx.tokenDecimal ?? 6);
             const value = (Number(tx.value) / Math.pow(10, decimals)).toLocaleString();
@@ -47,17 +51,39 @@ const TransactionsPage: React.FC = () => {
             } else if (tx.to?.toLowerCase() === address.toLowerCase()) {
                 displayValue = value;
             }
-            const row = worksheet.addRow([tx.hash, formatDate(tx.timeStamp), displayValue]);
+            const fee = tx.fee ? (Number(tx.fee) / Math.pow(10, decimals)).toLocaleString() : '';
+            const netValue = tx.netValue ? (Number(tx.netValue) / Math.pow(10, decimals)).toLocaleString() : '';
+            const walletBalance = tx.walletBalance ? (Number(tx.walletBalance) / Math.pow(10, decimals)).toLocaleString() : '';
+            const price = tx.price ?? '';
+            const valueUSD = tx.value && tx.price ? (Number(tx.value) / Math.pow(10, decimals) * Number(tx.price)).toFixed(2) : '';
+            const feeUSD = tx.fee && tx.price ? (Number(tx.fee) / Math.pow(10, decimals) * Number(tx.price)).toFixed(2) : '';
+
+            const row = worksheet.addRow([
+                tx.hash,
+                formatDate(tx.timeStamp),
+                displayValue,
+                fee,
+                netValue,
+                walletBalance,
+                price,
+                valueUSD,
+                feeUSD
+            ]);
             if (isRed) {
-                row.getCell(3).font = { color: { argb: 'FFFF0000' } };
+                row.getCell(3).font = { color: { argb: 'FFFF0000' } }; // Value column
             }
         });
 
-        // Set column widths for better readability
         worksheet.columns = [
-            { width: 48 },
-            { width: 12 },
-            { width: 18 }
+            { width: 48 }, // Hash
+            { width: 12 }, // Date
+            { width: 18 }, // Value
+            { width: 12 }, // Fee
+            { width: 14 }, // Net Value
+            { width: 16 }, // Wallet Balance
+            { width: 10 }, // Price
+            { width: 14 }, // Value (USD)
+            { width: 14 }, // Fee (USD)
         ];
 
         const buffer = await workbook.xlsx.writeBuffer();
@@ -95,6 +121,12 @@ const TransactionsPage: React.FC = () => {
                             <TableCell>Hash</TableCell>
                             <TableCell>Date</TableCell>
                             <TableCell>Value</TableCell>
+                            <TableCell>Fee</TableCell>
+                            <TableCell>Net Value</TableCell>
+                            <TableCell>Wallet Balance</TableCell>
+                            <TableCell>Price</TableCell>
+                            <TableCell>Value (USD)</TableCell>
+                            <TableCell>Fee (USD)</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -103,18 +135,33 @@ const TransactionsPage: React.FC = () => {
                             const value = (Number(tx.value) / Math.pow(10, decimals)).toLocaleString();
                             let displayValue = '?';
                             let style: React.CSSProperties = {};
+                            let isRed = false;
                             if (tx.from?.toLowerCase() === address.toLowerCase()) {
                                 displayValue = `(${value})`;
                                 style = { color: 'red' };
+                                isRed = true;
                             } else if (tx.to?.toLowerCase() === address.toLowerCase()) {
                                 displayValue = value;
                                 style = { color: 'black' };
                             }
+                            const fee = tx.fee ? (Number(tx.fee) / Math.pow(10, decimals)).toLocaleString() : '';
+                            const netValue = tx.netValue ? (Number(tx.netValue) / Math.pow(10, decimals)).toLocaleString() : '';
+                            const walletBalance = tx.walletBalance ? (Number(tx.walletBalance) / Math.pow(10, decimals)).toLocaleString() : '';
+                            const price = tx.price ?? '';
+                            const valueUSD = tx.value && tx.price ? (Number(tx.value) / Math.pow(10, decimals) * Number(tx.price)).toFixed(2) : '';
+                            const feeUSD = tx.fee && tx.price ? (Number(tx.fee) / Math.pow(10, decimals) * Number(tx.price)).toFixed(2) : '';
+
                             return (
                                 <TableRow key={tx.hash}>
                                     <TableCell>{tx.hash}</TableCell>
                                     <TableCell>{formatDate(tx.timeStamp)}</TableCell>
                                     <TableCell style={style}>{displayValue}</TableCell>
+                                    <TableCell>{fee}</TableCell>
+                                    <TableCell>{netValue}</TableCell>
+                                    <TableCell>{walletBalance}</TableCell>
+                                    <TableCell>{price}</TableCell>
+                                    <TableCell>{valueUSD}</TableCell>
+                                    <TableCell>{feeUSD}</TableCell>
                                 </TableRow>
                             );
                         })}
