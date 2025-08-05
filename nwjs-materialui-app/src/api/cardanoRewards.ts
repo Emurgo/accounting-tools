@@ -1,3 +1,5 @@
+import { CARDANO_API_KEY } from './keys';
+
 const EPOCH = {
   number: 571,
   startTime: new Date('2025-07-18T21:44:51.000Z'),
@@ -23,14 +25,14 @@ export function getEpochsForMonth(year: number, month: number): { first: number,
   }
 }
 
-const API_KEY = 'mainnettssNeYQtpuod4KVg8F7SDr5kW27mb7hJ'
+
 
 export async function getRewardHistory(stakeAddr: string): { epoch: number, amount: string, pool_id: string }[] {
   const resp = await fetch(
     `https://cardano-mainnet.blockfrost.io/api/v0/accounts/${stakeAddr}/rewards?order=desc`,
     {
       headers: {
-        'Project_id': API_KEY
+        'Project_id': CARDANO_API_KEY,
       }
     }
   )
