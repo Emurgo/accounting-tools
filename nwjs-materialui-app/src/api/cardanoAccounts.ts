@@ -129,7 +129,17 @@ async function* getTransactionsOfAccount(stakeKey: string) {
   }
 }
 
-export async function getTransactions(stakeAddress: string) {
+export async function getTransactionHistory(stakeAddress: string): {
+  txHash: string,
+  date: string,
+  amount: string,
+  fee: string,
+  net: string,
+  balance: string,
+  price: string,
+  netUsd: string,
+  feeUsd: string,
+} {
   const rows = await Array.fromAsync(getTransactionsOfAccount(stakeAddress))
   rows.reverse()
   let balance = new BigNumber('0')
@@ -163,7 +173,7 @@ if (require.main === module) {
   const txs = await Array.fromAsync(getTransactionIdsOfAddress('addr1q8z532y9kgmjkkwu9lhfqnlpehksnk4gx6yzqpv2ss487p5wgz8wnjezstnluk9fxwddlzluqph3dtk9x2a782rpfhuqtcc4sn'))
   console.log(txs)
   */
-  for (const row of await getTransactions('stake1u9scmlnt6pvy9gsvm6fjfep5p8fez0wfpydlw3zmfmm2x4ckwmqhd')) {
+  for (const row of await getTransactionHistory('stake1u9scmlnt6pvy9gsvm6fjfep5p8fez0wfpydlw3zmfmm2x4ckwmqhd')) {
     console.log('%s', [row.txHash, row.date, row.amount, row.fee, row.net, row.balance, row.price, row.netUsd, row.feeUsd].join('\t'))
   }
 }
