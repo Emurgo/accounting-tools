@@ -8,7 +8,7 @@ const EPOCH = {
 const SECS_PER_EPOCH = 432000
 
 
-function epochStartDate(epochNumber: number): Date {
+export function epochStartDate(epochNumber: number): Date {
   return new Date(
     (epochNumber - EPOCH.number) * SECS_PER_EPOCH * 1000 + EPOCH.startTime.valueOf()
   )
