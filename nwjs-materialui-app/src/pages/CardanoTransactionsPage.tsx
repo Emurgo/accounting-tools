@@ -24,24 +24,32 @@ const CardanoTransactionsPage: React.FC = () => {
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Cardano Transactions');
         // Add header
-        sheet.addRow(['Tx Hash', 'Date', 'Type', 'Amount', 'Epoch', 'Slot']);
+        sheet.addRow([
+            'Tx Hash', 'Date', 'Amount', 'Fee', 'Net', 'Balance', 'Price', 'Net (USD)', 'Fee (USD)'
+        ]);
         transactions.forEach(tx => {
             sheet.addRow([
-                tx.hash,
+                tx.txHash,
                 tx.date,
-                tx.type,
                 tx.amount,
-                tx.epoch,
-                tx.slot
+                tx.fee,
+                tx.net,
+                tx.balance,
+                tx.price,
+                tx.netUsd,
+                tx.feeUsd
             ]);
         });
         sheet.columns = [
-            { width: 48 },
-            { width: 16 },
-            { width: 10 },
-            { width: 16 },
-            { width: 10 },
-            { width: 10 }
+            { width: 48 }, // Tx Hash
+            { width: 16 }, // Date
+            { width: 16 }, // Amount
+            { width: 12 }, // Fee
+            { width: 14 }, // Net
+            { width: 16 }, // Balance
+            { width: 10 }, // Price
+            { width: 14 }, // Net (USD)
+            { width: 14 }, // Fee (USD)
         ];
         const buffer = await workbook.xlsx.writeBuffer();
         fileDownload(buffer, 'cardano_transactions.xlsx');
@@ -77,21 +85,27 @@ const CardanoTransactionsPage: React.FC = () => {
                         <TableRow>
                             <TableCell>Tx Hash</TableCell>
                             <TableCell>Date</TableCell>
-                            <TableCell>Type</TableCell>
                             <TableCell>Amount</TableCell>
-                            <TableCell>Epoch</TableCell>
-                            <TableCell>Slot</TableCell>
+                            <TableCell>Fee</TableCell>
+                            <TableCell>Net</TableCell>
+                            <TableCell>Balance</TableCell>
+                            <TableCell>Price</TableCell>
+                            <TableCell>Net (USD)</TableCell>
+                            <TableCell>Fee (USD)</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {transactions.map((tx, idx) => (
                             <TableRow key={idx}>
-                                <TableCell>{tx.hash}</TableCell>
+                                <TableCell>{tx.txHash}</TableCell>
                                 <TableCell>{tx.date}</TableCell>
-                                <TableCell>{tx.type}</TableCell>
                                 <TableCell>{tx.amount}</TableCell>
-                                <TableCell>{tx.epoch}</TableCell>
-                                <TableCell>{tx.slot}</TableCell>
+                                <TableCell>{tx.fee}</TableCell>
+                                <TableCell>{tx.net}</TableCell>
+                                <TableCell>{tx.balance}</TableCell>
+                                <TableCell>{tx.price}</TableCell>
+                                <TableCell>{tx.netUsd}</TableCell>
+                                <TableCell>{tx.feeUsd}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
