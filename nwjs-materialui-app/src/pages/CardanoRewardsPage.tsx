@@ -103,8 +103,8 @@ const CardanoRewardsPage: React.FC = () => {
                         epoch,
                         amountADA: new BigNumber(r.amount).dividedBy(1e6).toString(10),
                         amountUSD: new BigNumber(r.amount).dividedBy(1e6).multipliedBy(adaPrice).toFixed(2),
-                        epochStart: epochStartDate(epoch),
-                        epochEnd: epochStartDate(epoch + 1),
+                        epochStart: epochStartDate(epoch).toLocaleDateString('en-SG'),
+                        epochEnd: epochStartDate(epoch + 1).toLocaleDateString('en-SG'),
                     });
                 });
             }
