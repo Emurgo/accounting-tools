@@ -5,8 +5,8 @@
   "main": "http://localhost:3000",
   "node-remote": "http://localhost:3000/*",
   "scripts": {
-    "start": "nw .",
-    "build": "tsc"
+    "build": "rm -rf build || true; bun build public/index.html --production --splitting  --outdir build",
+    "serve": "http-server ./build -p 3000 -P https://localhost:3000? --proxy-options.secure false -S -C ./cert.pem -K ./key.pem"
   },
   "dependencies": {
     "@bitcoin-js/tiny-secp256k1-asmjs": "^2.2.3",
@@ -23,6 +23,7 @@
     "buffer": "^6.0.3",
     "dayjs": "^1.11.13",
     "exceljs": "^4.4.0",
+    "http-server": "^14.1.1",
     "js-file-download": "^0.4.12",
     "node-fetch-cache": "^5.0.2",
     "promise-throttle": "^1.1.2",
