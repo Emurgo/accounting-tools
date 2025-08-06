@@ -129,7 +129,7 @@ async function* getTransactionsOfAccount(stakeKey: string) {
   }
 }
 
-export async function getTransactionHistory(stakeAddress: string): {
+export async function getTransactionHistory(stakeAddress: string): Promise<{
   txHash: string,
   date: string,
   amount: string,
@@ -139,7 +139,7 @@ export async function getTransactionHistory(stakeAddress: string): {
   price: string,
   netUsd: string,
   feeUsd: string,
-} {
+}[]> {
   const rows = await Array.fromAsync(getTransactionsOfAccount(stakeAddress))
   rows.reverse()
   let balance = new BigNumber('0')
