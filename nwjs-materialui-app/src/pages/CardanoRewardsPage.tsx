@@ -6,7 +6,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { getDb, getAll, RewardEarningCardanoWallet } from '../db/rewardEarningCardanoWallet';
-import { getEpochsForMonth, getRewardHistory } from '../api/cardanoRewards';
+import { getEpochsForMonth, getRewardHistory, epochStartDate } from '../api/cardanoRewards';
 import { getCachedPriceUSD, getCoinGeckoProPrice } from '../api/fetch';
 import BigNumber from 'bignumber.js';
 import ExcelJS from 'exceljs';
@@ -96,15 +96,15 @@ const CardanoRewardsPage: React.FC = () => {
                 const history = await getRewardHistory(stakeAddress);
                 // Filter by epoch
                 const filtered = history.filter((r: any) => r.epoch >= first && r.epoch <= last);
-                if (filtered.length !== last - first + 1) {
-                    //throw new Error(`Missing rewards for stake address ${stakeAddress} in epochs ${first}-${last}`);
-                }
                 filtered.forEach((r: any) => {
+                    const epoch = r.epoch;
                     allRewards.push({
                         stakeAddress,
-                        epoch: r.epoch,
+                        epoch,
                         amountADA: new BigNumber(r.amount).dividedBy(1e6).toString(10),
-                        amountUSD: new BigNumber(r.amount).dividedBy(1e6).multipliedBy(adaPrice).toFixed(2)
+                        amountUSD: new BigNumber(r.amount).dividedBy(1e6).multipliedBy(adaPrice).toFixed(2),
+                        epochStart: epochStartDate(epoch),
+                        epochEnd: epochStartDate(epoch + 1),
                     });
                 });
             }
@@ -134,10 +134,16 @@ const CardanoRewardsPage: React.FC = () => {
             headerRow.font = { bold: true };
             headerRow.outlineLevel = 0;
             // Column headers
-            sheet.addRow(['Epoch', 'ADA', 'USD']);
+            sheet.addRow(['Epoch', 'Epoch Start Date', 'Epoch End Date', 'ADA', 'USD']);
             // Epoch rows
             groupedRewards[stakeAddress].forEach(r => {
-                sheet.addRow([r.epoch, r.amountADA, r.amountUSD]);
+                sheet.addRow([
+                    r.epoch,
+                    r.epochStart,
+                    r.epochEnd,
+                    r.amountADA,
+                    r.amountUSD
+                ]);
             });
             // Empty row for spacing
             sheet.addRow([]);
@@ -145,9 +151,11 @@ const CardanoRewardsPage: React.FC = () => {
 
         // Adjust column widths
         sheet.columns = [
-            { width: 20 },
-            { width: 16 },
-            { width: 16 }
+            { width: 10 },  // Epoch
+            { width: 18 },  // Epoch Start Date
+            { width: 18 },  // Epoch End Date
+            { width: 16 },  // ADA
+            { width: 16 }   // USD
         ];
 
         const buffer = await workbook.xlsx.writeBuffer();
@@ -254,6 +262,8 @@ const CardanoRewardsPage: React.FC = () => {
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>Epoch</TableCell>
+                                            <TableCell>Epoch Start Date</TableCell>
+                                            <TableCell>Epoch End Date</TableCell>
                                             <TableCell>ADA</TableCell>
                                             <TableCell>USD</TableCell>
                                         </TableRow>
@@ -262,6 +272,8 @@ const CardanoRewardsPage: React.FC = () => {
                                         {groupedRewards[stakeAddress].map((r, idx) => (
                                             <TableRow key={idx}>
                                                 <TableCell>{r.epoch}</TableCell>
+                                                <TableCell>{r.epochStart}</TableCell>
+                                                <TableCell>{r.epochEnd}</TableCell>
                                                 <TableCell>{r.amountADA}</TableCell>
                                                 <TableCell>{r.amountUSD}</TableCell>
                                             </TableRow>
