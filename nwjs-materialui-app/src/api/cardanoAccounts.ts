@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { asyncItersMergeSort } from 'async-iters-merge-sort'
 import { CARDANO_API_KEY } from './keys'
 
-async function get(endpoint, query) {
+async function get(endpoint: string, query: void | Record<string, string>) {
   let search = query ? (new URLSearchParams(query)).toString() : ''
   if (search) {
     search = '?' + search
@@ -26,13 +26,13 @@ async function get(endpoint, query) {
   return data
 }
 
-async function* getPaged(endpoint: string, query: void | Record<string, string | number>, page: boolean | number = false): unknown {
+async function* getPaged(endpoint: string, query: void | Record<string, string>, page: boolean | number = false): AsyncIterable<unknown> {
   const pageSize = (typeof page === 'number') ? page : page ? 100 : 0
   for (let i = 1; i <=21474836; i++) {
-    const q = {...query}
+    const q: Record<string, string> = {...query}
     if (pageSize) {
-      q.count = pageSize
-      q.page = i
+      q.count = String(pageSize)
+      q.page = String(i)
     }
     const data = await get(endpoint, q)
     yield* data
@@ -49,14 +49,14 @@ async function* getPaged(endpoint: string, query: void | Record<string, string |
   }
 }
 
-async function* getAddressesOfAccount(stakeKey: string): AsyncIteractor<string> {
+async function* getAddressesOfAccount(stakeKey: string): AsyncIterable<string> {
   const resp = getPaged(`accounts/${stakeKey}/addresses`, {}, true)
   for await (const a of resp) {
     yield a.address
   }
 }
 
-async function* getTransactionIdsOfAddress(address: string): AsyncIteractor<string> {
+async function* getTransactionIdsOfAddress(address: string): AsyncIterable<{txHash: string, blockTime: number}> {
   for await (const tx of  getPaged(`addresses/${address}/transactions`, { order: 'desc' }, true)) {
     yield { txHash: tx.tx_hash, blockTime: tx.block_time }
   }
