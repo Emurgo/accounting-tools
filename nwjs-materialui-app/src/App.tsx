@@ -4,7 +4,7 @@ import NavigationDrawer from './components/NavigationDrawer';
 import ManageAssetsPage from './pages/ManageAssetsPage';
 import WeeklyReportPage from './pages/WeeklyReportPage';
 import MonthlyReportPage from './pages/MonthlyReportPage';
-import TransactionsPage from './pages/TransactionsPage';
+import PolygonUsdtTransactionsPage from './pages/PolygonUsdtTransactionsPage';
 import CardanoRewardsPage from './pages/CardanoRewardsPage';
 import CardanoTransactionsPage from './pages/CardanoTransactionsPage';
 import { Grid } from '@mui/material';
@@ -24,7 +24,7 @@ const App: React.FC = () => {
                             <Route path="/manage-assets" component={ManageAssetsPage} />
                             <Route path="/weekly-report" component={WeeklyReportPage} />
                             <Route path="/monthly-report" component={MonthlyReportPage} />
-                            <Route path="/polygon-usdt-transactions" component={TransactionsPage} />
+                            <Route path="/polygon-usdt-transactions" component={PolygonUsdtTransactionsPage} />
                             <Route path="/cardano-rewards" component={CardanoRewardsPage} />
                             <Route path="/cardano-transactions" component={CardanoTransactionsPage} />
                             {/* Additional routes can be added here */}
