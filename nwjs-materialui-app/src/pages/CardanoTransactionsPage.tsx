@@ -5,14 +5,14 @@ import fileDownload from 'js-file-download';
 import { getTransactionHistory } from '../api/cardanoAccounts';
 
 const CardanoTransactionsPage: React.FC = () => {
-    const [stakeAddress, setStakeAddress] = useState('');
+    const [stakeOrBaseAddress, setStakeOrBaseAddress] = useState('');
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     const handleQuery = async () => {
         setLoading(true);
         try {
-            const txs = await getTransactionHistory(stakeAddress);
+            const txs = await getTransactionHistory(stakeOrBaseAddress);
             setTransactions(txs);
         } catch (e) {
             setTransactions([]);
@@ -63,12 +63,12 @@ const CardanoTransactionsPage: React.FC = () => {
             <Stack direction="row" spacing={2} alignItems="center" mb={2}>
                 <TextField
                     label="Stake Address"
-                    value={stakeAddress}
-                    onChange={e => setStakeAddress(e.target.value)}
+                    value={stakeOrBaseAddress}
+                    onChange={e => setStakeOrBaseAddress(e.target.value)}
                     size="small"
                     sx={{ minWidth: 400 }}
                 />
-                <Button variant="contained" onClick={handleQuery} disabled={loading || !stakeAddress}>
+                <Button variant="contained" onClick={handleQuery} disabled={loading || !stakeOrBaseAddress}>
                     {loading ? 'Querying...' : 'Query Transactions'}
                 </Button>
                 <Button

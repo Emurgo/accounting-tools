@@ -62,8 +62,16 @@ async function* getTransactionIdsOfAddress(address: string): AsyncIterable<{txHa
   }
 }
 
-async function* getTransactionsOfAccount(stakeKey: string) {
-  const addrs  = await Array.fromAsync(getAddressesOfAccount(stakeKey))
+async function* getTransactions(stakeOrBaseAddress: string) {
+  let addrs;
+  if (stakeOrBaseAddress.startsWith('stake')) {
+    addrs = await Array.fromAsync(getAddressesOfAccount(stakeOrBaseAddress));
+  } else if (stakeOrBaseAddress.startsWith('addr1')) {
+    addrs = [stakeOrBaseAddress];
+  } else {
+    throw new Error('unexpected address prefix');
+  }
+
   const addrSet = new Set(addrs)
   const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime)
 
@@ -111,9 +119,12 @@ async function* getTransactionsOfAccount(stakeKey: string) {
       accountingFee = fee.negated()
     }
 
+    /*
     const priceResp = await fetch(`https://api.yoroiwallet.com/api/price/ADA/${date.valueOf()}`)
     const priceRespContent = await priceResp.json()
     const price = priceRespContent.tickers[0].prices.USD
+    */
+    const price = '0';
 
     const net = amount.plus(accountingFee)
     yield {
@@ -129,7 +140,7 @@ async function* getTransactionsOfAccount(stakeKey: string) {
   }
 }
 
-export async function getTransactionHistory(stakeAddress: string): Promise<{
+export async function getTransactionHistory(stakeOrBaseAddress: string): Promise<{
   txHash: string,
   date: string,
   amount: string,
@@ -140,7 +151,7 @@ export async function getTransactionHistory(stakeAddress: string): Promise<{
   netUsd: string,
   feeUsd: string,
 }[]> {
-  const rows = await Array.fromAsync(getTransactionsOfAccount(stakeAddress))
+  const rows = await Array.fromAsync(getTransactions(stakeOrBaseAddress))
   rows.reverse()
   let balance = new BigNumber('0')
   for (const row of rows) {
