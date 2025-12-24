@@ -24,7 +24,7 @@ const App: React.FC = () => {
                             <Route path="/manage-assets" component={ManageAssetsPage} />
                             <Route path="/weekly-report" component={WeeklyReportPage} />
                             <Route path="/monthly-report" component={MonthlyReportPage} />
-                            <Route path="/transactions" component={TransactionsPage} />
+                            <Route path="/polygon-usdt-transactions" component={TransactionsPage} />
                             <Route path="/cardano-rewards" component={CardanoRewardsPage} />
                             <Route path="/cardano-transactions" component={CardanoTransactionsPage} />
                             {/* Additional routes can be added here */}

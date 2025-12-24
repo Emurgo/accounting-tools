@@ -481,13 +481,37 @@ export async function fetchCopperWalletData(): Promise<CopperWalletData[]> {
   return resp.json()
 }
 
+type EtherScanERC20TokenTransfersByAddress = {
+    "blockNumber": string,
+    "timeStamp": string,
+    "hash": string
+    "nonce": string,
+    "blockHash": string
+    "from": string,
+    "contractAddress": string
+    "to": string
+    "value": string,
+    "tokenName": string,
+    "tokenSymbol": string,
+    "tokenDecimal": string,
+    "transactionIndex": string,
+    "gas": string,
+    "gasPrice": string,
+    "gasUsed": string,
+    "cumulativeGasUsed": string,
+    "input": "deprecated",
+    "methodId": string,
+    "functionName": string,
+    "confirmations": string,
+}
+
 export async function getErc20Transactions(
     chainId: string, tokenAddress: string, address: string
-): Promise<{ hash: string, value: string, tokenDecimal: string, from: string, to: string, timestamp: string, fee: string, netValue: string, walletBalance: string, price: string }[]> {
-    const resp = await fetch(`https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&contractaddress=${tokenAddress}&address=${address}&sort=desc&apikey=${ETHERSCAN_KEY}`);
+): Promise<EtherScanERC20TokenTransfersByAddress[]> {
+    const resp = await fetch(`https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=tokentx&sort=asc&contractaddress=${tokenAddress}&address=${address}&sort=desc&apikey=${ETHERSCAN_KEY}`);
     if (!resp.ok) {
         throw new Error(`Failed to fetch ERC20 transactions: ${resp.statusText}`);
     }
     const data = await resp.json();
-    return data.result.map(row => ({ ...row, fee: '0', netValue: '0', walletBalance: '0', price: '0' }));
+    return data.result;
 }
