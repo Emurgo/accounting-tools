@@ -2,6 +2,45 @@ import BigNumber from 'bignumber.js';
 import { asyncItersMergeSort } from 'async-iters-merge-sort'
 import { CARDANO_API_KEY } from './keys'
 
+const DB_NAME = 'BlockfrostCache';
+const STORE_NAME = 'responses';
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getFromCache(url: string): Promise<any | null> {
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(url);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => resolve(null);
+  });
+}
+
+async function setInCache(url: string, data: any): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put(data, url);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
 async function get(endpoint: string, query: void | Record<string, string>) {
   let search = query ? (new URLSearchParams(query)).toString() : ''
   if (search) {
@@ -9,6 +48,12 @@ async function get(endpoint: string, query: void | Record<string, string>) {
   }
 
   const queryString = `https://cardano-mainnet.blockfrost.io/api/v0/${endpoint}${search}`
+
+  // Check cache first
+  const cached = await getFromCache(queryString);
+  if (cached !== null) {
+    return cached;
+  }
 
   //console.error(`requesting ${queryString} ...`)
   const resp = await fetch(
@@ -23,6 +68,10 @@ async function get(endpoint: string, query: void | Record<string, string>) {
     throw new Error(`error when querying ${queryString}`)
   }
   const data = await resp.json()
+
+  // Cache the response
+  await setInCache(queryString, data);
+
   return data
 }
 
