@@ -39,6 +39,14 @@ const NavigationDrawer: React.FC = () => {
                 <ListItem button component={Link} to="/cardano-transactions">
                     <ListItemText primary="Cardano Transactions" />
                 </ListItem>
+                <ListItem
+                    button
+                    component={Link}
+                    to="/binance-accounts"
+                    sx={isActive('/binance-accounts') ? { bgcolor: 'action.selected' } : {}}
+                >
+                    <ListItemText primary="Binance Accounts" />
+                </ListItem>
                 <ListItem button component={Link} to="/polygon-usdt-transactions">
                     <ListItemText primary="USDT(Polygon) Transactions" />
                 </ListItem>

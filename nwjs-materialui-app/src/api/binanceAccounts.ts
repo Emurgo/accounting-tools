@@ -97,14 +97,13 @@ interface DepositHistoryEntry {
 export async function getDepositHistory(apiKey: string, secretKey: string): Promise<DepositHistoryEntry[]> {
   const query = buildSignedQuery(
     {
+      recvWindow: '5000',
       timestamp: String(Date.now()),
     },
     secretKey
   );
 
-  const url = `${BINANCE_API_BASE}/sapi/v2/localentity/deposit/history?${query}`;
-  //const url = `${BINANCE_API_BASE}/sapi/v1/capital/withdraw/history?${query}`;
-  //not working, returning []
+  const url = `${BINANCE_API_BASE}/sapi/v1/capital/deposit/hisrec?${query}`;
 
   const resp = await fetch(url, {
     headers: {
@@ -114,7 +113,7 @@ export async function getDepositHistory(apiKey: string, secretKey: string): Prom
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Binance account query failed: ${resp.status} ${resp.statusText} ${text}`);
+    throw new Error(`Binance deposit history query failed: ${resp.status} ${resp.statusText} ${text}`);
   }
 
   return resp.json();
@@ -145,12 +144,13 @@ interface WithdrawHistoryEntry {
 export async function getWithdrawHistory(apiKey: string, secretKey: string): Promise<WithdrawHistoryEntry[]> {
   const query = buildSignedQuery(
     {
+      recvWindow: '5000',
       timestamp: String(Date.now()),
     },
     secretKey
   );
 
-  const url = `${BINANCE_API_BASE}/sapi/v2/localentity/withdraw/history?${query}`;
+  const url = `${BINANCE_API_BASE}/sapi/v1/capital/withdraw/history?${query}`;
 
   const resp = await fetch(url, {
     headers: {
@@ -160,7 +160,7 @@ export async function getWithdrawHistory(apiKey: string, secretKey: string): Pro
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Binance account query failed: ${resp.status} ${resp.statusText} ${text}`);
+    throw new Error(`Binance withdrawal history query failed: ${resp.status} ${resp.statusText} ${text}`);
   }
 
   return resp.json();
