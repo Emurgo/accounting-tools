@@ -149,6 +149,9 @@ const BinanceAccountsPage: React.FC = () => {
                 <Button variant="contained" onClick={handleQuery} disabled={loading || !hasCredentials}>
                     {loading ? 'Querying...' : 'Query'}
                 </Button>
+                <Box>
+                  <a href="https://www.binance.com/en/support/faq/detail/360002502072" rel="noopener noreferer" target="_blank">How to get API key and secret?</a>
+                </Box>
             </Stack>
             {error && (
                 <Typography variant="body2" color="error" sx={{ mb: 2 }}>
