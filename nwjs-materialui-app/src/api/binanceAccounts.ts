@@ -19,6 +19,40 @@ function genBinanceQueryFunction<RespT>(params: Record<string, unknown>, endpoin
 }
 */
 
+/*
+example output:
+{
+  "makerCommission": 10,
+  "takerCommission": 10,
+  "buyerCommission": 0,
+  "sellerCommission": 0,
+  "commissionRates": {
+    "maker": "0.00100000",
+    "taker": "0.00100000",
+    "buyer": "0.00000000",
+    "seller": "0.00000000"
+  },
+  "canTrade": true,
+  "canWithdraw": true,
+  "canDeposit": true,
+  "brokered": false,
+  "requireSelfTradePrevention": false,
+  "preventSor": false,
+  "updateTime": 1766976135663,
+  "accountType": "SPOT",
+  "balances": [
+    {
+      "asset": "ADA",
+      "free": "10.00000000",
+      "locked": "0.00000000"
+    }
+  ],
+  "permissions": [
+    "TRD_GRP_091"
+  ],
+  "uid": 72236611
+}
+*/
 export async function getBinanceAccountInfo(apiKey: string, secretKey: string): Promise<unknown> {
   const query = buildSignedQuery(
     {
@@ -141,9 +175,9 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  //getBinanceAccountInfo(apiKey, secretKey)
+  getBinanceAccountInfo(apiKey, secretKey)
   //getDepositHistory(apiKey, secretKey)
-  getWithdrawHistory(apiKey, secretKey)
+  //getWithdrawHistory(apiKey, secretKey)
     .then((data) => {
       console.log(JSON.stringify(data, null, 2));
     })
