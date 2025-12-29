@@ -1,9 +1,9 @@
-import * as crypto from 'crypto';
+import createHmac from 'create-hmac';
 
 const BINANCE_API_BASE = 'https://api.binance.com';
 
 function signQuery(queryString: string, secretKey: string): string {
-  return crypto.createHmac('sha256', secretKey).update(queryString).digest('hex');
+  return createHmac('sha256', secretKey).update(queryString).digest('hex');
 }
 
 function buildSignedQuery(params: Record<string, string>, secretKey: string): string {
