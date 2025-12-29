@@ -1,6 +1,6 @@
 import createHmac from 'create-hmac';
 
-const BINANCE_API_BASE = 'https://api.binance.com';
+const BINANCE_API_BASE = '/binance';
 
 function signQuery(queryString: string, secretKey: string): string {
   return createHmac('sha256', secretKey).update(queryString).digest('hex');

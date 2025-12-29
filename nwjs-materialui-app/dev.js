@@ -1,5 +1,6 @@
 import myReactSinglePageApp from './public/index.html';
 import { fetchCopperWalletDataBackend } from './src/api/copper';
+import proxyBinanceApi from './src/api/binanceProxy';
 
 Bun.serve({
   hostname: '0.0.0.0',
@@ -12,6 +13,7 @@ Bun.serve({
   routes: {
     '/copperWalletDataProxy': fetchCopperWalletDataBackend,
     "/*": myReactSinglePageApp,
+    '/binance/*': proxyBinanceApi,
   },
   env: 'inline',
 });
