@@ -168,12 +168,9 @@ async function* getTransactions(stakeOrBaseAddress: string) {
       accountingFee = fee.negated()
     }
 
-    /*
     const priceResp = await fetch(`https://api.yoroiwallet.com/api/price/ADA/${date.valueOf()}`)
     const priceRespContent = await priceResp.json()
     const price = priceRespContent.tickers[0].prices.USD
-    */
-    const price = '0';
 
     const net = amount.plus(accountingFee)
     yield {
