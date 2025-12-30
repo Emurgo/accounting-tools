@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { asyncItersMergeSort } from 'async-iters-merge-sort'
-import { CARDANO_API_KEY } from './keys'
+import { CARDANO_API_KEY } from '../../secrets';
 
 const DB_NAME = 'BlockfrostCache';
 const STORE_NAME = 'responses';

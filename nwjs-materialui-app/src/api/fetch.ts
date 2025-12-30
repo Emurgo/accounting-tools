@@ -8,6 +8,13 @@ window.Buffer = Buffer;
 //import bitcoin from 'bitcoinjs-lib';
 import PromiseThrottle from 'promise-throttle';
 import { net } from 'web3';
+import {
+    CARDANOSCAN_KEY,
+    COINGECKO_API_KEY,
+    CRYPTOAPIS_KEY,
+    ETHERSCAN_KEY,
+    SOLANA_RPC_URL,
+} from '../../secrets';
 
 interface API {
     name: string;
@@ -15,16 +22,11 @@ interface API {
     getPriceUSD: () => Promise<string>;
 }
 
-const CRYPTOAPIS_KEY = '5b8f18e02dbe444b4f86fccf2235549ec014cf82';
-const ETHERSCAN_KEY = '7W73YR7MHZZ9IVGRAG1UZPRPP7Q9AJVDA3';
 // https://solana.com/rpc
-const SOLANA_RPC_URL = 'https://white-neat-orb.solana-mainnet.quiknode.pro/01d191873234b69fde495a500fde3f65109aca8a/';
-const CARDANOSCAN_KEY = '18c8265c-845b-4a8d-9ebe-b92a734edc7a';
 
 const priceCache: Record<string, { value: string, timestamp: number }> = {};
 const PRICE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes in ms
 
-const COINGECKO_API_KEY = 'CG-qbbFhoNq7zgASQaYgchMRYnF';
 
 // Throttle ADA balance requests to avoid rate limits (max 1 request per second)
 const adaBalanceThrottle = new PromiseThrottle({

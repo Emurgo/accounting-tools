@@ -1,4 +1,4 @@
-import { CARDANO_API_KEY } from './keys';
+import { CARDANO_API_KEY } from '../../secrets';
 
 const EPOCH = {
   number: 571,
