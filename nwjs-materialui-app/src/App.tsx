@@ -8,6 +8,7 @@ import PolygonUsdtTransactionsPage from './pages/PolygonUsdtTransactionsPage';
 import CardanoRewardsPage from './pages/CardanoRewardsPage';
 import CardanoTransactionsPage from './pages/CardanoTransactionsPage';
 import BinanceAccountsPage from './pages/BinanceAccountsPage';
+import EtherAccountHistoryPage from './pages/EtherAccountHistoryPage';
 import { Grid } from '@mui/material';
 
 const drawerWidth = 240;
@@ -29,6 +30,7 @@ const App: React.FC = () => {
                             <Route path="/cardano-rewards" component={CardanoRewardsPage} />
                             <Route path="/cardano-transactions" component={CardanoTransactionsPage} />
                             <Route path="/binance-accounts" component={BinanceAccountsPage} />
+                            <Route path="/ether-account-history" component={EtherAccountHistoryPage} />
                             {/* Additional routes can be added here */}
                         </Switch>
                     </div>
