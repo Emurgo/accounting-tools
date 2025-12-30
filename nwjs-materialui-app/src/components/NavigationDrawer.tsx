@@ -53,7 +53,7 @@ const NavigationDrawer: React.FC = () => {
                     to="/ether-account-history"
                     sx={isActive('/ether-account-history') ? { bgcolor: 'action.selected' } : {}}
                 >
-                    <ListItemText primary="Ether Account History" />
+                    <ListItemText primary="Ethereum Transactions" />
                 </ListItem>
                 <ListItem button component={Link} to="/polygon-usdt-transactions">
                     <ListItemText primary="USDT(Polygon) Transactions" />
