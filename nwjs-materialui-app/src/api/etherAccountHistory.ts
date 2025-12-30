@@ -97,6 +97,11 @@ function formatTimestamp(seconds: number): { label: string; timeMs: number } {
     return { label: new Date(timeMs).toLocaleString('en-SG'), timeMs };
 }
 
+function formatEtherAmount(valueWei: BigNumber): string {
+    const fixed = valueWei.shiftedBy(-18).toFixed(18);
+    return fixed.replace(/\.?0+$/, '');
+}
+
 export async function getEtherAccountHistory(address: string): Promise<EtherAccountHistoryRow[]> {
     const normalizedAddress = address.toLowerCase();
 
@@ -129,8 +134,8 @@ export async function getEtherAccountHistory(address: string): Promise<EtherAcco
         rows.push({
             timestamp: time.label,
             txId: tx.hash,
-            amount: amountWei.shiftedBy(-18).toString(),
-            fee: feeWei.shiftedBy(-18).toString(),
+            amount: formatEtherAmount(amountWei),
+            fee: formatEtherAmount(feeWei),
             balance: '0',
             timeMs: time.timeMs,
             amountWei,
@@ -156,7 +161,7 @@ export async function getEtherAccountHistory(address: string): Promise<EtherAcco
         rows.push({
             timestamp: time.label,
             txId: tx.hash,
-            amount: amountWei.shiftedBy(-18).toString(),
+            amount: formatEtherAmount(amountWei),
             fee: '0',
             balance: '0',
             timeMs: time.timeMs,
@@ -176,7 +181,7 @@ export async function getEtherAccountHistory(address: string): Promise<EtherAcco
     let balanceWei = new BigNumber(0);
     for (const row of rows) {
         balanceWei = balanceWei.plus(row.amountWei).minus(row.feeWei);
-        row.balance = balanceWei.shiftedBy(-18).toString();
+        row.balance = formatEtherAmount(balanceWei);
     }
 
     return rows.map(({ amountWei, feeWei, sortKey, ...rest }) => rest);
