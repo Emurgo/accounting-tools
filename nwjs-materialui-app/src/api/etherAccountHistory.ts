@@ -1,7 +1,8 @@
 import BigNumber from 'bignumber.js';
 import { ETHERSCAN_KEY } from '../../secrets';
 
-const ETHERSCAN_API_BASE = 'https://api.etherscan.io/api';
+const ETHERSCAN_API_BASE = 'https://api.etherscan.io/v2/api';
+const ETHEREUM_CHAIN_ID = '1';
 const PAGE_SIZE = 1000;
 
 type EtherscanResponse<T> = {
@@ -68,7 +69,7 @@ async function fetchEtherscanPage<T>(
     page: number,
     offset: number
 ): Promise<T[]> {
-    const url = `${ETHERSCAN_API_BASE}?module=account&action=${action}&address=${address}` +
+    const url = `${ETHERSCAN_API_BASE}?chainid=${ETHEREUM_CHAIN_ID}&module=account&action=${action}&address=${address}` +
         `&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_KEY}`;
     const resp = await fetch(url);
     if (!resp.ok) {
