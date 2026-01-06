@@ -4,6 +4,9 @@ import { CARDANO_API_KEY } from '../../secrets';
 
 const DB_NAME = 'BlockfrostCache';
 const STORE_NAME = 'responses';
+const adaPriceCache: Record<string, string> = {};
+
+type AmountEntry = { unit: string; quantity: string };
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -105,6 +108,37 @@ async function* getAddressesOfAccount(stakeKey: string): AsyncIterable<string> {
   }
 }
 
+function getDayKey(date: Date): string {
+  return date.toLocaleDateString('en-SG');
+}
+
+function getLovelaceAmount(amounts: AmountEntry[] | undefined): BigNumber {
+  const lovelace = amounts?.find((amount) => amount.unit === 'lovelace')?.quantity ?? '0';
+  return new BigNumber(lovelace);
+}
+
+async function getWalletAddresses(stakeOrBaseAddress: string): Promise<string[]> {
+  if (stakeOrBaseAddress.startsWith('stake')) {
+    return Array.fromAsync(getAddressesOfAccount(stakeOrBaseAddress));
+  }
+  if (stakeOrBaseAddress.startsWith('addr1')) {
+    return [stakeOrBaseAddress];
+  }
+  throw new Error('unexpected address prefix');
+}
+
+async function getWalletBalanceLovelace(stakeOrBaseAddress: string): Promise<BigNumber> {
+  if (stakeOrBaseAddress.startsWith('stake')) {
+    const resp = await get(`accounts/${stakeOrBaseAddress}`);
+    return new BigNumber(resp.controlled_amount ?? '0');
+  }
+  if (stakeOrBaseAddress.startsWith('addr1')) {
+    const resp = await get(`addresses/${stakeOrBaseAddress}`);
+    return getLovelaceAmount(resp.amount as AmountEntry[]);
+  }
+  throw new Error('unexpected address prefix');
+}
+
 async function* getTransactionIdsOfAddress(address: string): AsyncIterable<{txHash: string, blockTime: number}> {
   for await (const tx of  getPaged(`addresses/${address}/transactions`, { order: 'desc' }, true)) {
     yield { txHash: tx.tx_hash, blockTime: tx.block_time }
@@ -186,6 +220,21 @@ async function* getTransactions(stakeOrBaseAddress: string) {
   }
 }
 
+async function getAdaPriceUsd(date: Date): Promise<string> {
+  const key = getDayKey(date);
+  if (adaPriceCache[key]) {
+    return adaPriceCache[key];
+  }
+  const priceResp = await fetch(`https://api.yoroiwallet.com/api/price/ADA/${date.valueOf()}`);
+  if (!priceResp.ok) {
+    throw new Error('error when querying ADA price');
+  }
+  const priceRespContent = await priceResp.json();
+  const price = priceRespContent.tickers[0].prices.USD?.toString() ?? '0';
+  adaPriceCache[key] = price;
+  return price;
+}
+
 export async function getTransactionHistory(stakeOrBaseAddress: string): Promise<{
   txHash: string,
   date: string,
@@ -210,6 +259,90 @@ export async function getTransactionHistory(stakeOrBaseAddress: string): Promise
     }
   }
   return rows
+}
+
+export async function getCardanoAddressDailyReport(
+  stakeOrBaseAddress: string,
+  days: number,
+): Promise<{
+  rows: {
+    date: string,
+    adaBalance: string,
+    adaPriceUsd: string,
+    usdBalance: string,
+  }[],
+  hasMore: boolean,
+}> {
+  const addrs = await getWalletAddresses(stakeOrBaseAddress);
+  const addrSet = new Set(addrs);
+  const currentBalance = await getWalletBalanceLovelace(stakeOrBaseAddress);
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const oldestStart = new Date(todayStart);
+  oldestStart.setDate(todayStart.getDate() - (days - 1));
+
+  const netByDay: Record<string, BigNumber> = {};
+  let hasMore = false;
+  if (addrs.length > 0) {
+    const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime);
+    let prevTxHash;
+    for await (const { txHash, blockTime } of txs) {
+      if (txHash === prevTxHash) {
+        continue;
+      }
+      prevTxHash = txHash;
+      const txDate = new Date(blockTime * 1000);
+      if (txDate < oldestStart) {
+        hasMore = true;
+        break;
+      }
+      const utxosResp = await get(`txs/${txHash}/utxos`);
+      const fromWallet = (utxosResp.inputs as { address: string; amount: AmountEntry[] }[])
+        .reduce((sum, input) => {
+          if (!addrSet.has(input.address)) {
+            return sum;
+          }
+          return sum.plus(getLovelaceAmount(input.amount));
+        }, new BigNumber('0'));
+      const toWallet = (utxosResp.outputs as { address: string; amount: AmountEntry[] }[])
+        .reduce((sum, output) => {
+          if (!addrSet.has(output.address)) {
+            return sum;
+          }
+          return sum.plus(getLovelaceAmount(output.amount));
+        }, new BigNumber('0'));
+      const net = toWallet.minus(fromWallet);
+      const dayKey = getDayKey(txDate);
+      netByDay[dayKey] = (netByDay[dayKey] ?? new BigNumber('0')).plus(net);
+    }
+  }
+
+  const rows: {
+    date: string,
+    adaBalance: string,
+    adaPriceUsd: string,
+    usdBalance: string,
+  }[] = [];
+
+  let balance = currentBalance;
+  for (let i = 0; i < days; i++) {
+    const rowDate = new Date(todayStart);
+    rowDate.setDate(todayStart.getDate() - i);
+    const dateKey = getDayKey(rowDate);
+    const adaBalance = balance.shiftedBy(-6);
+    const adaPriceUsd = await getAdaPriceUsd(rowDate);
+    const usdBalance = adaBalance.multipliedBy(adaPriceUsd).toString();
+    rows.push({
+      date: dateKey,
+      adaBalance: adaBalance.toString(),
+      adaPriceUsd,
+      usdBalance,
+    });
+    const net = netByDay[dateKey] ?? new BigNumber('0');
+    balance = balance.minus(net);
+  }
+
+  return { rows, hasMore };
 }
 
 if (require.main === module) {
