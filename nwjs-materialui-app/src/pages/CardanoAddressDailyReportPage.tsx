@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Box, Typography, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack } from '@mui/material';
 import { getCardanoAddressDailyReport } from '../api/cardanoAccounts';
 
@@ -9,38 +9,41 @@ type DailyReportRow = {
     usdBalance: string;
 };
 
-const DAYS_PER_PAGE = 100;
+const DAYS_PER_PAGE = 10;
 
 const CardanoAddressDailyReportPage: React.FC = () => {
     const [address, setAddress] = useState('');
     const [rows, setRows] = useState<DailyReportRow[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [daysToShow, setDaysToShow] = useState(DAYS_PER_PAGE);
     const [hasMore, setHasMore] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const iterRef = useRef(null);
 
-    const fetchReport = async (days: number) => {
-        setLoading(true);
-        try {
-            const result = await getCardanoAddressDailyReport(address, days);
-            setRows(result.rows);
-            setHasMore(result.hasMore);
-        } catch (e) {
-            setRows([]);
-            setHasMore(false);
+    const fetchReport = async () => {
+      const iter = iterRef.current;
+      for (let i = 0; i < DAYS_PER_PAGE; i++) {
+        const { value, done } = await iter.next();
+        if (done) {
+          setHasMore(false);
+          return;
         }
-        setLoading(false);
+        setRows(rows => [...rows, value]);
+      }
+      setHasMore(true);
     };
 
     const handleQuery = async () => {
-        const nextDays = DAYS_PER_PAGE;
-        setDaysToShow(nextDays);
-        await fetchReport(nextDays);
+        setLoading(true);
+        setRows([]);
+        iterRef.current = getCardanoAddressDailyReport(address);
+        await fetchReport();
+        setLoading(false);
     };
 
     const handleLoadMore = async () => {
-        const nextDays = daysToShow + DAYS_PER_PAGE;
-        setDaysToShow(nextDays);
-        await fetchReport(nextDays);
+      setLoadingMore(true);
+      await fetchReport();
+      setLoadingMore(false);
     };
 
     return (
@@ -62,15 +65,6 @@ const CardanoAddressDailyReportPage: React.FC = () => {
                 <Button variant="contained" onClick={handleQuery} disabled={loading || !address}>
                     {loading ? 'Querying...' : 'Query Report'}
                 </Button>
-                {hasMore && (
-                    <Button
-                        variant="outlined"
-                        onClick={handleLoadMore}
-                        disabled={loading || rows.length === 0}
-                    >
-                        Load more (100 days)
-                    </Button>
-                )}
             </Stack>
             <TableContainer component={Paper}>
                 <Table>
@@ -93,6 +87,15 @@ const CardanoAddressDailyReportPage: React.FC = () => {
                         ))}
                     </TableBody>
                 </Table>
+                {hasMore && (
+                    <Button
+                        variant="outlined"
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                    >
+                      {loadingMore ? 'Loading more...' : 'Load more'}
+                    </Button>
+                )}
             </TableContainer>
         </Box>
     );

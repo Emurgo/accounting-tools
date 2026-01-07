@@ -243,6 +243,16 @@ async function getAdaPriceUsd(date: Date): Promise<string> {
   return price;
 }
 
+async function getCurrentAdaPriceUsd(): Promise<string> {
+  const priceResp = await fetch(`https://api.yoroiwallet.com/api/price/ADA/current`);
+  if (!priceResp.ok) {
+    throw new Error('error when querying ADA price');
+  }
+  const priceRespContent = await priceResp.json();
+  const price = priceRespContent.ticker.prices.USD?.toString() ?? '0';
+  return price;
+}
+
 export async function getTransactionHistory(stakeOrBaseAddress: string): Promise<{
   txHash: string,
   date: string,
@@ -269,27 +279,27 @@ export async function getTransactionHistory(stakeOrBaseAddress: string): Promise
   return rows
 }
 
-async function* _getCardanoAddressDailyReport(
+export async function* getCardanoAddressDailyReport(
   stakeOrBaseAddress: string,
-): Promise<{
-  rows: {
-    date: string,
-    adaBalance: string,
-    adaPriceUsd: string,
-    usdBalance: string,
-  }[],
-  hasMore: boolean,
+): AsyncGenerator<{
+  date: string,
+  adaBalance: string,
+  adaPriceUsd: string,
+  usdBalance: string,
 }> {
   const addrs = await getWalletAddresses(stakeOrBaseAddress);
   const addrSet = new Set(addrs);
-  const currentBalance = await getWalletBalanceLovelace(stakeOrBaseAddress);
+  const currentBalance = new BigNumber(
+    await getWalletBalanceLovelace(stakeOrBaseAddress)
+  ).shiftedBy(-6);
   const today = new Date();
 
+  const currentPrice = String(await getCurrentAdaPriceUsd());
   yield {
-    date: today,
-    adaBalance: currentBalance,
-    adaPriceUsd: '0',
-    usdBalance: '0',
+    date: today.toLocaleDateString('en-SG'),
+    adaBalance: currentBalance.toString(),
+    adaPriceUsd: currentPrice,
+    usdBalance: currentBalance.multipliedBy(currentPrice).toString(),
   };
 
   const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime);
@@ -321,11 +331,12 @@ async function* _getCardanoAddressDailyReport(
   for await (const { txHash, blockTime } of pointsInTime) {
     if (txHash === null) {
       // this is an inserted day boundary
+      const adaPriceUsd = await getAdaPriceUsd(new Date(blockTime * 1000));
       yield {
-        date: new Date(blockTime * 1000),
-        adaBalance: balance,
-        adaPriceusd: '0',
-        usdBlance: '0',
+        date: new Date(blockTime * 1000 - 1).toLocaleDateString('en-SG'),
+        adaBalance: balance.toString(),
+        adaPriceUsd,
+        usdBalance: balance.multipliedBy(adaPriceUsd).toString(),
       }
     } else {
       // this is a tx
@@ -346,95 +357,11 @@ async function* _getCardanoAddressDailyReport(
                            }
                            return sum.plus(getLovelaceAmount(output.amount));
                          }, new BigNumber('0'));
-      balance = balance.plus(fromWallet).minus(toWallet);
+      balance = balance.plus(fromWallet.shiftedBy(-6)).minus(toWallet.shiftedBy(-6));
       //console.log('%s', JSON.stringify(utxosResp, null, 2));
-      console.log('tx', txHash, (new Date(blockTime*1000))*1000, 'from', fromWallet.toString(), 'to', toWallet.toString());
+      //console.log('tx', txHash, (new Date(blockTime*1000))*1000, 'from', fromWallet.toString(), 'to', toWallet.toString());
     }
   }
-}
-
-export async function getCardanoAddressDailyReport(
-  stakeOrBaseAddress: string,
-  days: number,
-): Promise<{
-  rows: {
-    date: string,
-    adaBalance: string,
-    adaPriceUsd: string,
-    usdBalance: string,
-  }[],
-  hasMore: boolean,
-}> {
-  const addrs = await getWalletAddresses(stakeOrBaseAddress);
-  const addrSet = new Set(addrs);
-  const currentBalance = await getWalletBalanceLovelace(stakeOrBaseAddress);
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const oldestStart = new Date(todayStart);
-  oldestStart.setDate(todayStart.getDate() - (days - 1));
-
-  const netByDay: Record<string, BigNumber> = {};
-  let hasMore = false;
-
-  const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime);
-  let prevTxHash;
-  for await (const { txHash, blockTime } of txs) {
-    if (txHash === prevTxHash) {
-      continue;
-    }
-    prevTxHash = txHash;
-    const txDate = new Date(blockTime * 1000);
-    if (txDate < oldestStart) {
-      hasMore = true;
-      break;
-    }
-    const utxosResp = await get(`txs/${txHash}/utxos`);
-    const fromWallet = (utxosResp.inputs as { address: string; amount: AmountEntry[] }[])
-                         .reduce((sum, input) => {
-                           if (!addrSet.has(input.address)) {
-                             return sum;
-                           }
-                           return sum.plus(getLovelaceAmount(input.amount));
-                         }, new BigNumber('0'));
-    const toWallet = (utxosResp.outputs as { address: string; amount: AmountEntry[] }[])
-                       .reduce((sum, output) => {
-                         if (!addrSet.has(output.address)) {
-                           return sum;
-                         }
-                         return sum.plus(getLovelaceAmount(output.amount));
-                       }, new BigNumber('0'));
-    const net = toWallet.minus(fromWallet);
-    const dayKey = getDayKey(txDate);
-    netByDay[dayKey] = (netByDay[dayKey] ?? new BigNumber('0')).plus(net);
-  }
-
-
-  const rows: {
-    date: string,
-    adaBalance: string,
-    adaPriceUsd: string,
-    usdBalance: string,
-  }[] = [];
-
-  let balance = currentBalance;
-  for (let i = 0; i < days; i++) {
-    const rowDate = new Date(todayStart);
-    rowDate.setDate(todayStart.getDate() - i);
-    const dateKey = getDayKey(rowDate);
-    const adaBalance = balance.shiftedBy(-6);
-    const adaPriceUsd = await getAdaPriceUsd(rowDate);
-    const usdBalance = adaBalance.multipliedBy(adaPriceUsd).toString();
-    rows.push({
-      date: dateKey,
-      adaBalance: adaBalance.toString(),
-      adaPriceUsd,
-      usdBalance,
-    });
-    const net = netByDay[dateKey] ?? new BigNumber('0');
-    balance = balance.minus(net);
-  }
-
-  return { rows, hasMore };
 }
 
 if (require.main === module) {
@@ -461,8 +388,12 @@ if (require.main === module) {
     console.log('%s', [row.txHash, row.date, row.amount, row.fee, row.net, row.balance, row.price, row.netUsd, row.feeUsd].join('\t'))
   }
   */
+  /*
+  const price = await getAdaPriceUsd(new Date());
+  console.log('price', price);
+  */
   let i = 0;
-  for await (const d of _getCardanoAddressDailyReport('addr1qyx9dx3hhsrtt8p6m7ar076zl6pfj9lnudkplmd69g87yzrekjkpkn09av5l63z6kpr3akd0ueh84czwycjzwzvenweqv5tfu8')) {
+  for await (const d of getCardanoAddressDailyReport('addr1qyx9dx3hhsrtt8p6m7ar076zl6pfj9lnudkplmd69g87yzrekjkpkn09av5l63z6kpr3akd0ueh84czwycjzwzvenweqv5tfu8')) {
     console.log(d);
     i++;
     if (i === 100) break;
