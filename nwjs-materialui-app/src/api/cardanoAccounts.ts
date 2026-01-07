@@ -52,20 +52,20 @@ async function setInCache(url: string, data: any): Promise<void> {
   });
 }
 
-async function get(endpoint: string, query: void | Record<string, string>) {
+async function get(endpoint: string, query: void | Record<string, string>, options?: { noCache?: boolean }) {
   let search = query ? (new URLSearchParams(query)).toString() : ''
   if (search) {
     search = '?' + search
   }
 
   const queryString = `https://cardano-mainnet.blockfrost.io/api/v0/${endpoint}${search}`
-
   // Check cache first
-  const cached = await getFromCache(queryString);
-  if (cached !== null) {
-    return cached;
+  if (!options?.noCache) {
+    const cached = await getFromCache(queryString);
+    if (cached !== null) {
+      return cached;
+    }
   }
-
   //console.error(`requesting ${queryString} ...`)
   const resp = await fetch(
     queryString,
@@ -80,13 +80,14 @@ async function get(endpoint: string, query: void | Record<string, string>) {
   }
   const data = await resp.json()
 
-  // Cache the response
-  await setInCache(queryString, data);
-
+  if (!options?.noCache) {
+    // Cache the response
+    await setInCache(queryString, data);
+  }
   return data
 }
 
-async function* getPaged(endpoint: string, query: void | Record<string, string>, page: boolean | number = false): AsyncIterable<unknown> {
+async function* getPaged(endpoint: string, query: void | Record<string, string>, page: boolean | number = false, options?: { noCache?: boolean }): AsyncIterable<unknown> {
   const pageSize = (typeof page === 'number') ? page : page ? 100 : 0
   for (let i = 1; i <=21474836; i++) {
     const q: Record<string, string> = {...query}
@@ -94,7 +95,7 @@ async function* getPaged(endpoint: string, query: void | Record<string, string>,
       q.count = String(pageSize)
       q.page = String(i)
     }
-    const data = await get(endpoint, q)
+    const data = await get(endpoint, q, options)
     yield* data
     if (pageSize) {
       if (!Array.isArray(data)) {
@@ -110,7 +111,7 @@ async function* getPaged(endpoint: string, query: void | Record<string, string>,
 }
 
 async function* getAddressesOfAccount(stakeKey: string): AsyncIterable<string> {
-  const resp = getPaged(`accounts/${stakeKey}/addresses`, {}, true)
+  const resp = getPaged(`accounts/${stakeKey}/addresses`, {}, true, { noCache: true })
   for await (const a of resp) {
     yield a.address
   }
@@ -137,18 +138,18 @@ async function getWalletAddresses(stakeOrBaseAddress: string): Promise<string[]>
 
 async function getWalletBalanceLovelace(stakeOrBaseAddress: string): Promise<BigNumber> {
   if (stakeOrBaseAddress.startsWith('stake')) {
-    const resp = await get(`accounts/${stakeOrBaseAddress}`);
+    const resp = await get(`accounts/${stakeOrBaseAddress}`, { noCache: true });
     return new BigNumber(resp.controlled_amount ?? '0');
   }
   if (stakeOrBaseAddress.startsWith('addr1')) {
-    const resp = await get(`addresses/${stakeOrBaseAddress}`);
+    const resp = await get(`addresses/${stakeOrBaseAddress}`, { noCache: true });
     return getLovelaceAmount(resp.amount as AmountEntry[]);
   }
   throw new Error('unexpected address prefix');
 }
 
 async function* getTransactionIdsOfAddress(address: string): AsyncIterable<{txHash: string, blockTime: number}> {
-  for await (const tx of  getPaged(`addresses/${address}/transactions`, { order: 'desc' }, true)) {
+  for await (const tx of  getPaged(`addresses/${address}/transactions`, { order: 'desc' }, true, { noCache: true })) {
     yield { txHash: tx.tx_hash, blockTime: tx.block_time }
   }
 }
