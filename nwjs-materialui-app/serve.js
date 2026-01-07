@@ -1,6 +1,9 @@
 import myReactSinglePageApp from './public/index.html';
 import { fetchCopperWalletDataBackend } from './src/api/copper';
 import proxyBinanceApi from './src/api/binanceProxy';
+import serveStatic from "serve-static-bun";
+
+const isDev = process.argv[2] === 'dev';
 
 Bun.serve({
   hostname: '0.0.0.0',
@@ -12,8 +15,11 @@ Bun.serve({
   },
   routes: {
     '/copperWalletDataProxy': fetchCopperWalletDataBackend,
-    "/*": myReactSinglePageApp,
     '/binance/*': proxyBinanceApi,
+    ...(
+      isDev ? { "/*": myReactSinglePageApp } : {}
+    )
   },
+  fetch: serveStatic('build'),
   env: 'inline',
 });

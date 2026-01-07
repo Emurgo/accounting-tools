@@ -6,7 +6,9 @@
   "node-remote": "http://localhost:3000/*",
   "scripts": {
     "build": "rm -rf build || true; bun build public/index.html --production --splitting  --outdir build",
-    "serve": "http-server ./build -p 3000 -P https://localhost:3000? --proxy-options.secure false -S -C ./cert.pem -K ./key.pem"
+    "dev": "bun ./serve.js dev",
+    "serve": "bun ./serve.js",
+    "serve(old, to be removed)": "http-server ./build -p 3000 -P https://localhost:3000? --proxy-options.secure false -S -C ./cert.pem -K ./key.pem"
   },
   "dependencies": {
     "@bitcoin-js/tiny-secp256k1-asmjs": "^2.2.3",
@@ -21,10 +23,10 @@
     "bip32": "^5.0.0-rc.0",
     "bitcoinjs-lib": "^6.1.7",
     "buffer": "^6.0.3",
+    "bun": "^1.3.5",
     "create-hmac": "^1.1.7",
     "dayjs": "^1.11.13",
     "exceljs": "^4.4.0",
-    "http-server": "^14.1.1",
     "js-file-download": "^0.4.12",
     "node-fetch-cache": "^5.0.2",
     "promise-throttle": "^1.1.2",
@@ -32,6 +34,7 @@
     "react-dom": "^17.0.2",
     "react-router-dom": "^5.3.0",
     "rxdb": "^16.13.0",
+    "serve-static-bun": "^0.5.3",
     "web3": "^4.16.0",
     "xlsx": "^0.18.5"
   },
