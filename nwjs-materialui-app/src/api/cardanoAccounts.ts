@@ -22,7 +22,12 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+let enableIndexedDbCache = true;
+
 async function getFromCache(url: string): Promise<any | null> {
+  if (!enableIndexedDbCache) {
+    return null;
+  }
   const db = await openDB();
   return new Promise((resolve) => {
     const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -34,6 +39,9 @@ async function getFromCache(url: string): Promise<any | null> {
 }
 
 async function setInCache(url: string, data: any): Promise<void> {
+  if (!enableIndexedDbCache) {
+    return;
+  }
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -261,6 +269,90 @@ export async function getTransactionHistory(stakeOrBaseAddress: string): Promise
   return rows
 }
 
+async function* _getCardanoAddressDailyReport(
+  stakeOrBaseAddress: string,
+): Promise<{
+  rows: {
+    date: string,
+    adaBalance: string,
+    adaPriceUsd: string,
+    usdBalance: string,
+  }[],
+  hasMore: boolean,
+}> {
+  const addrs = await getWalletAddresses(stakeOrBaseAddress);
+  const addrSet = new Set(addrs);
+  const currentBalance = await getWalletBalanceLovelace(stakeOrBaseAddress);
+  const today = new Date();
+
+  yield {
+    date: today,
+    adaBalance: currentBalance,
+    adaPriceUsd: '0',
+    usdBalance: '0',
+  };
+
+  const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime);
+  let earliestTxBlockTime = 0;
+  async function* txsIter() {
+    let blockTime = Math.floor(Date.now() / 1000);
+    for await (const tx of txs) {
+      blockTime = tx.blockTime;
+      yield tx;
+    }
+    earliestTxBlockTime = blockTime;
+  }
+  function* genDayBoundaries() {
+    // start of today
+    let i = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    for (;;) {
+      const blockTime = Math.floor(i.valueOf() / 1000);
+      if (blockTime < earliestTxBlockTime) {
+        return;
+      }
+      yield { txHash: null, blockTime};
+      i = new Date(i.valueOf() - 24*60*60*1000);
+    }
+  }
+  const pointsInTime = asyncItersMergeSort([txsIter(), genDayBoundaries()], ({blockTime}) => -blockTime);
+
+  let balance = currentBalance;
+
+  for await (const { txHash, blockTime } of pointsInTime) {
+    if (txHash === null) {
+      // this is an inserted day boundary
+      yield {
+        date: new Date(blockTime * 1000),
+        adaBalance: balance,
+        adaPriceusd: '0',
+        usdBlance: '0',
+      }
+    } else {
+      // this is a tx
+      const utxosResp = await get(`txs/${txHash}/utxos`);
+      const filterInputs = inputs => inputs.filter(input => !input.collateral && !input.reference);
+      const fromWallet = (filterInputs(utxosResp.inputs) as { address: string; amount: AmountEntry[] }[])
+                           .reduce((sum, input) => {
+                             if (!addrSet.has(input.address)) {
+                               return sum;
+                             }
+                             return sum.plus(getLovelaceAmount(input.amount));
+                           }, new BigNumber('0'));
+      const filterOutputs = outputs => outputs.filter(input => !input.collateral);
+      const toWallet = (filterOutputs(utxosResp.outputs) as { address: string; amount: AmountEntry[] }[])
+                         .reduce((sum, output) => {
+                           if (!addrSet.has(output.address)) {
+                             return sum;
+                           }
+                           return sum.plus(getLovelaceAmount(output.amount));
+                         }, new BigNumber('0'));
+      balance = balance.plus(fromWallet).minus(toWallet);
+      //console.log('%s', JSON.stringify(utxosResp, null, 2));
+      console.log('tx', txHash, (new Date(blockTime*1000))*1000, 'from', fromWallet.toString(), 'to', toWallet.toString());
+    }
+  }
+}
+
 export async function getCardanoAddressDailyReport(
   stakeOrBaseAddress: string,
   days: number,
@@ -283,39 +375,39 @@ export async function getCardanoAddressDailyReport(
 
   const netByDay: Record<string, BigNumber> = {};
   let hasMore = false;
-  if (addrs.length > 0) {
-    const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime);
-    let prevTxHash;
-    for await (const { txHash, blockTime } of txs) {
-      if (txHash === prevTxHash) {
-        continue;
-      }
-      prevTxHash = txHash;
-      const txDate = new Date(blockTime * 1000);
-      if (txDate < oldestStart) {
-        hasMore = true;
-        break;
-      }
-      const utxosResp = await get(`txs/${txHash}/utxos`);
-      const fromWallet = (utxosResp.inputs as { address: string; amount: AmountEntry[] }[])
-        .reduce((sum, input) => {
-          if (!addrSet.has(input.address)) {
-            return sum;
-          }
-          return sum.plus(getLovelaceAmount(input.amount));
-        }, new BigNumber('0'));
-      const toWallet = (utxosResp.outputs as { address: string; amount: AmountEntry[] }[])
-        .reduce((sum, output) => {
-          if (!addrSet.has(output.address)) {
-            return sum;
-          }
-          return sum.plus(getLovelaceAmount(output.amount));
-        }, new BigNumber('0'));
-      const net = toWallet.minus(fromWallet);
-      const dayKey = getDayKey(txDate);
-      netByDay[dayKey] = (netByDay[dayKey] ?? new BigNumber('0')).plus(net);
+
+  const txs = asyncItersMergeSort(addrs.map(getTransactionIdsOfAddress), ({blockTime}) => -blockTime);
+  let prevTxHash;
+  for await (const { txHash, blockTime } of txs) {
+    if (txHash === prevTxHash) {
+      continue;
     }
+    prevTxHash = txHash;
+    const txDate = new Date(blockTime * 1000);
+    if (txDate < oldestStart) {
+      hasMore = true;
+      break;
+    }
+    const utxosResp = await get(`txs/${txHash}/utxos`);
+    const fromWallet = (utxosResp.inputs as { address: string; amount: AmountEntry[] }[])
+                         .reduce((sum, input) => {
+                           if (!addrSet.has(input.address)) {
+                             return sum;
+                           }
+                           return sum.plus(getLovelaceAmount(input.amount));
+                         }, new BigNumber('0'));
+    const toWallet = (utxosResp.outputs as { address: string; amount: AmountEntry[] }[])
+                       .reduce((sum, output) => {
+                         if (!addrSet.has(output.address)) {
+                           return sum;
+                         }
+                         return sum.plus(getLovelaceAmount(output.amount));
+                       }, new BigNumber('0'));
+    const net = toWallet.minus(fromWallet);
+    const dayKey = getDayKey(txDate);
+    netByDay[dayKey] = (netByDay[dayKey] ?? new BigNumber('0')).plus(net);
   }
+
 
   const rows: {
     date: string,
@@ -355,6 +447,7 @@ if (require.main === module) {
   });
 
   global.fetch = fetch
+  enableIndexedDbCache = false;
   /*
   const addrs = await Array.fromAsync(getAddressesOfAccount('stake1ux8yprhfev3g9el7tz5n8xkl307qqmck4mzn9wlr4ps5m7qjqz8v7'))
   console.log(addrs)
@@ -363,7 +456,15 @@ if (require.main === module) {
   const txs = await Array.fromAsync(getTransactionIdsOfAddress('addr1q8z532y9kgmjkkwu9lhfqnlpehksnk4gx6yzqpv2ss487p5wgz8wnjezstnluk9fxwddlzluqph3dtk9x2a782rpfhuqtcc4sn'))
   console.log(txs)
   */
+  /*
   for (const row of await getTransactionHistory('stake1u9scmlnt6pvy9gsvm6fjfep5p8fez0wfpydlw3zmfmm2x4ckwmqhd')) {
     console.log('%s', [row.txHash, row.date, row.amount, row.fee, row.net, row.balance, row.price, row.netUsd, row.feeUsd].join('\t'))
+  }
+  */
+  let i = 0;
+  for await (const d of _getCardanoAddressDailyReport('addr1qyx9dx3hhsrtt8p6m7ar076zl6pfj9lnudkplmd69g87yzrekjkpkn09av5l63z6kpr3akd0ueh84czwycjzwzvenweqv5tfu8')) {
+    console.log(d);
+    i++;
+    if (i === 100) break;
   }
 }
