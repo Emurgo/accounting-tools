@@ -50,6 +50,14 @@ const NavigationDrawer: React.FC = () => {
                 <ListItem
                     button
                     component={Link}
+                    to="/xrp-transactions"
+                    sx={isActive('/xrp-transactions') ? { bgcolor: 'action.selected' } : {}}
+                >
+                    <ListItemText primary="XRP Transactions" />
+                </ListItem>
+                <ListItem
+                    button
+                    component={Link}
                     to="/cardano-address-daily-report"
                     sx={isActive('/cardano-address-daily-report') ? { bgcolor: 'action.selected' } : {}}
                 >
