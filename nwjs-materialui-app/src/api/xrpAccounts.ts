@@ -1,19 +1,21 @@
 import BigNumber from 'bignumber.js';
 
-type RippleTransaction = {
-    tx: {
-        Account?: string;
-        Destination?: string;
-        Amount?: string | { currency: string; value: string; issuer?: string };
-        date?: number | string;
-        hash?: string;
-    };
+type XrpscanAmount = {
+    currency?: string;
+    value?: string | number;
+};
+
+type XrpscanTransaction = {
+    Account?: string;
+    Destination?: string;
+    Amount?: string | number | XrpscanAmount;
+    TransactionType?: string;
+    date?: string | number;
 };
 
 type RippleTransactionsResponse = {
-    result?: string;
     marker?: string;
-    transactions?: RippleTransaction[];
+    transactions?: XrpscanTransaction[];
 };
 
 export type XrpTransactionRow = {
@@ -87,11 +89,33 @@ async function fetchRippleTransactions(address: string, marker?: string): Promis
     return await resp.json() as RippleTransactionsResponse;
 }
 
-function getSignedDrops(tx: RippleTransaction['tx'], address: string): BigNumber | null {
-    if (!tx.Amount || typeof tx.Amount !== 'string') {
+function parseAmountDrops(amount: XrpscanTransaction['Amount']): BigNumber | null {
+    if (amount === undefined || amount === null) {
         return null;
     }
-    const amountDrops = new BigNumber(tx.Amount);
+    if (typeof amount === 'string' || typeof amount === 'number') {
+        return new BigNumber(amount);
+    }
+    if (typeof amount === 'object') {
+        if (amount.currency && amount.currency !== 'XRP') {
+            return null;
+        }
+        if (amount.value === undefined || amount.value === null) {
+            return null;
+        }
+        return new BigNumber(amount.value);
+    }
+    return null;
+}
+
+function getSignedDrops(tx: XrpscanTransaction, address: string): BigNumber | null {
+    if (tx.TransactionType && tx.TransactionType !== 'Payment') {
+        return null;
+    }
+    const amountDrops = parseAmountDrops(tx.Amount);
+    if (!amountDrops) {
+        return null;
+    }
     if (!tx.Account || !tx.Destination) {
         return null;
     }
@@ -113,17 +137,13 @@ export async function getXrpTransactionHistory(address: string): Promise<XrpTran
     let marker: string | undefined;
     for (let page = 0; page < 100000; page += 1) {
         const payload = await fetchRippleTransactions(normalizedAddress, marker);
-        if (payload.result !== 'success') {
-            throw new Error('Ripple data request failed');
-        }
         const transactions = payload.transactions ?? [];
         if (transactions.length === 0) {
             break;
         }
         for (const entry of transactions) {
-            const tx = entry.tx;
-            const txDate = parseRippleDate(tx.date);
-            const signedDrops = getSignedDrops(tx, normalizedAddress);
+            const txDate = parseRippleDate(entry.date);
+            const signedDrops = getSignedDrops(entry, normalizedAddress);
             if (!txDate || !signedDrops || signedDrops.isZero()) {
                 continue;
             }
