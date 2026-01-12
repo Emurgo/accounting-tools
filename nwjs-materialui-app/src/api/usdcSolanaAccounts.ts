@@ -4,7 +4,7 @@ import { SOLANA_RPC_URL } from '../../secrets';
 
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 const SIGNATURE_PAGE_LIMIT = 1000;
-const FALLBACK_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+const FALLBACK_SOLANA_RPC_URL = 'https://rpc.ankr.com/solana';
 
 export type UsdcSolanaTransactionRow = {
     time: string;
@@ -148,7 +148,11 @@ export async function getUsdcSolanaTransactionHistory(
         return await getUsdcSolanaTransactionHistoryWithConnection(connection, normalizedAddress);
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        if (!message.toLowerCase().includes('endpoint is disabled')) {
+        if (
+            !message.toLowerCase().includes('endpoint is disabled') &&
+            !message.toLowerCase().includes('forbidden') &&
+            !message.includes('403')
+        ) {
             throw err;
         }
         const fallbackConnection = new Connection(FALLBACK_SOLANA_RPC_URL);
