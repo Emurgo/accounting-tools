@@ -11,6 +11,7 @@ type XrpscanTransaction = {
     Amount?: string | number | XrpscanAmount;
     TransactionType?: string;
     date?: string | number;
+    hash?: string;
 };
 
 type RippleTransactionsResponse = {
@@ -23,6 +24,7 @@ export type XrpTransactionRow = {
     amount: string;
     priceUsd: string;
     amountUsd: string;
+    hash: string;
 };
 
 const XRP_PRICE_CACHE: Record<string, string> = {};
@@ -155,6 +157,7 @@ export async function getXrpTransactionHistory(address: string): Promise<XrpTran
                 amount: amountXrp,
                 priceUsd,
                 amountUsd,
+                hash: entry.hash ?? '',
             });
         }
         marker = payload.marker;

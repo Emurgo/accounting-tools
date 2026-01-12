@@ -62,6 +62,7 @@ const XrpTransactionsPage: React.FC = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell>Date</TableCell>
+                            <TableCell>Transaction Hash</TableCell>
                             <TableCell>Amount (XRP)</TableCell>
                             <TableCell>XRP Price (USD)</TableCell>
                             <TableCell>Amount (USD)</TableCell>
@@ -71,6 +72,7 @@ const XrpTransactionsPage: React.FC = () => {
                         {rows.map((row, idx) => (
                             <TableRow key={`${row.date}-${idx}`}>
                                 <TableCell>{row.date}</TableCell>
+                                <TableCell>{row.hash}</TableCell>
                                 <TableCell>{row.amount}</TableCell>
                                 <TableCell>{row.priceUsd}</TableCell>
                                 <TableCell>{row.amountUsd}</TableCell>
@@ -78,7 +80,7 @@ const XrpTransactionsPage: React.FC = () => {
                         ))}
                         {rows.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={4}>No transactions to display.</TableCell>
+                                <TableCell colSpan={5}>No transactions to display.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
