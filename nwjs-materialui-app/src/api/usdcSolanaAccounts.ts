@@ -4,6 +4,7 @@ import { SOLANA_RPC_URL } from '../../secrets';
 
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 const SIGNATURE_PAGE_LIMIT = 1000;
+const FALLBACK_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
 
 export type UsdcSolanaTransactionRow = {
     time: string;
@@ -90,15 +91,11 @@ async function fetchAllSignatures(
     return signatures;
 }
 
-export async function getUsdcSolanaTransactionHistory(
+async function getUsdcSolanaTransactionHistoryWithConnection(
+    connection: Connection,
     ownerAddress: string
 ): Promise<UsdcSolanaTransactionRow[]> {
-    const normalizedAddress = ownerAddress.trim();
-    if (!normalizedAddress) {
-        return [];
-    }
-    const connection = new Connection(SOLANA_RPC_URL);
-    const ownerPubkey = new PublicKey(normalizedAddress);
+    const ownerPubkey = new PublicKey(ownerAddress);
     const tokenAccounts = await connection.getParsedTokenAccountsByOwner(ownerPubkey, {
         mint: USDC_MINT,
     });
@@ -122,7 +119,7 @@ export async function getUsdcSolanaTransactionHistory(
         if (!tx) {
             continue;
         }
-        const net = getUsdcNetChange(tx, normalizedAddress, USDC_MINT.toBase58());
+        const net = getUsdcNetChange(tx, ownerAddress, USDC_MINT.toBase58());
         if (!net) {
             continue;
         }
@@ -137,4 +134,24 @@ export async function getUsdcSolanaTransactionHistory(
     }
     rows.sort((a, b) => b.timeMs - a.timeMs);
     return rows.map(({ timeMs, ...rest }) => rest);
+}
+
+export async function getUsdcSolanaTransactionHistory(
+    ownerAddress: string
+): Promise<UsdcSolanaTransactionRow[]> {
+    const normalizedAddress = ownerAddress.trim();
+    if (!normalizedAddress) {
+        return [];
+    }
+    try {
+        const connection = new Connection(SOLANA_RPC_URL);
+        return await getUsdcSolanaTransactionHistoryWithConnection(connection, normalizedAddress);
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (!message.toLowerCase().includes('endpoint is disabled')) {
+            throw err;
+        }
+        const fallbackConnection = new Connection(FALLBACK_SOLANA_RPC_URL);
+        return await getUsdcSolanaTransactionHistoryWithConnection(fallbackConnection, normalizedAddress);
+    }
 }
