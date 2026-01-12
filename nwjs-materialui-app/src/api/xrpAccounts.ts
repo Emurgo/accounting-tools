@@ -69,10 +69,9 @@ async function getXrpPriceUsd(date: Date): Promise<string> {
 }
 
 async function fetchRippleTransactions(address: string, marker?: string): Promise<RippleTransactionsResponse> {
-    const baseUrl = `https://data.ripple.com/v2/accounts/${address}/transactions`;
+    const baseUrl = `https://api.xrpscan.com/api/v1/account/${address}/transactions`;
     const params = new URLSearchParams({
         type: 'Payment',
-        result: 'tesSUCCESS',
         limit: '200',
         descending: 'true',
     });
@@ -83,7 +82,7 @@ async function fetchRippleTransactions(address: string, marker?: string): Promis
     const resp = await fetch(url);
     if (!resp.ok) {
         const text = await resp.text();
-        throw new Error(`Ripple data request failed: ${resp.status} ${resp.statusText} ${text}`);
+        throw new Error(`XRPSCAN request failed: ${resp.status} ${resp.statusText} ${text}`);
     }
     return await resp.json() as RippleTransactionsResponse;
 }
