@@ -11,6 +11,7 @@ import CardanoAddressDailyReportPage from './pages/CardanoAddressDailyReportPage
 import BitcoinTransactionsPage from './pages/BitcoinTransactionsPage';
 import XrpTransactionsPage from './pages/XrpTransactionsPage';
 import UsdcSolanaTransactionsPage from './pages/UsdcSolanaTransactionsPage';
+import SolanaTransactionsPage from './pages/SolanaTransactionsPage';
 import BinanceAccountsPage from './pages/BinanceAccountsPage';
 import EtherAccountHistoryPage from './pages/EtherAccountHistoryPage';
 import { Grid } from '@mui/material';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
                             <Route path="/bitcoin-transactions" component={BitcoinTransactionsPage} />
                             <Route path="/xrp-transactions" component={XrpTransactionsPage} />
                             <Route path="/usdc-solana-transactions" component={UsdcSolanaTransactionsPage} />
+                            <Route path="/solana-transactions" component={SolanaTransactionsPage} />
                             <Route path="/cardano-address-daily-report" component={CardanoAddressDailyReportPage} />
                             <Route path="/binance-accounts" component={BinanceAccountsPage} />
                             <Route path="/ether-account-history" component={EtherAccountHistoryPage} />
