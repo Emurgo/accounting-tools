@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { COINGECKO_API_KEY } from '../../secrets';
 
 export type PolkadotTransactionRow = {
     time: string;
@@ -49,7 +50,12 @@ async function getDotPriceUsd(date: Date): Promise<string> {
         return DOT_PRICE_CACHE[cacheKey];
     }
     const url = `https://api.coingecko.com/api/v3/coins/polkadot/history?date=${cacheKey}&localization=false`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, {
+        headers: {
+            'x-cg-demo-api-key': COINGECKO_API_KEY,
+            'x-cg-pro-api-key': COINGECKO_API_KEY,
+        },
+    });
     if (!resp.ok) {
         const text = await resp.text();
         throw new Error(`CoinGecko price request failed: ${resp.status} ${resp.statusText} ${text}`);
