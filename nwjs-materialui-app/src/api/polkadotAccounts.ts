@@ -31,7 +31,10 @@ type SubscanTransfersResponse = {
 const DOT_DECIMALS = 10;
 const DOT_PRICE_CACHE: Record<string, string> = {};
 
-function formatDotAmount(raw: BigNumber, decimals: number): string {
+function formatDotAmount(raw: BigNumber, decimals: number, rawInput: string): string {
+    if (rawInput.includes('.')) {
+        return raw.toString();
+    }
     const fixed = raw.shiftedBy(-decimals).toFixed(decimals);
     return fixed.replace(/\.?0+$/, '');
 }
@@ -127,7 +130,7 @@ export async function getPolkadotTransactionHistory(address: string): Promise<Po
             }
             const time = new Date(timeMs);
             const priceUsd = await getDotPriceUsd(time);
-            const amountDot = formatDotAmount(signed, decimals);
+            const amountDot = formatDotAmount(signed, decimals, transfer.amount ?? '0');
             const amountUsd = new BigNumber(amountDot).multipliedBy(priceUsd).toString();
             rows.push({
                 time: time.toLocaleString('en-SG'),
