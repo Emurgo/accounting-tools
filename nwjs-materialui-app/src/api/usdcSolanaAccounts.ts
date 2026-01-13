@@ -1,10 +1,10 @@
 import BigNumber from 'bignumber.js';
 import { Connection, ParsedTransactionWithMeta, PublicKey } from '@solana/web3.js';
-import { SOLANA_RPC_URL } from '../../secrets';
+import { ANKR_API_KEY, SOLANA_RPC_URL } from '../../secrets';
 
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 const SIGNATURE_PAGE_LIMIT = 1000;
-const FALLBACK_SOLANA_RPC_URL = 'https://rpc.ankr.com/solana';
+const FALLBACK_SOLANA_RPC_URL = `https://rpc.ankr.com/solana/${ANKR_API_KEY}`;
 
 export type UsdcSolanaTransactionRow = {
     time: string;
