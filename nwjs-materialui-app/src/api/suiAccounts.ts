@@ -1,5 +1,4 @@
 import BigNumber from 'bignumber.js';
-import { COINGECKO_API_KEY } from '../../secrets';
 
 export type SuiTransactionRow = {
     time: string;
@@ -35,31 +34,20 @@ function formatSuiAmount(amount: BigNumber): string {
     return fixed.replace(/\.?0+$/, '');
 }
 
-function formatCoinGeckoDate(date: Date): string {
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const year = date.getUTCFullYear();
-    return `${day}-${month}-${year}`;
-}
-
 async function getSuiPriceUsd(date: Date): Promise<string> {
-    const cacheKey = formatCoinGeckoDate(date);
+    const cacheKey = date.toISOString().slice(0, 10);
     if (SUI_PRICE_CACHE[cacheKey]) {
         return SUI_PRICE_CACHE[cacheKey];
     }
-    const url = `https://api.coingecko.com/api/v3/coins/sui/history?date=${cacheKey}&localization=false`;
-    const resp = await fetch(url, {
-        headers: {
-            'x-cg-demo-api-key': COINGECKO_API_KEY,
-            'x-cg-pro-api-key': COINGECKO_API_KEY,
-        },
-    });
+    const timestamp = Math.floor(date.valueOf() / 1000);
+    const url = `https://min-api.cryptocompare.com/data/pricehistorical?fsym=SUI&tsyms=USD&ts=${timestamp}`;
+    const resp = await fetch(url);
     if (!resp.ok) {
         const text = await resp.text();
-        throw new Error(`CoinGecko price request failed: ${resp.status} ${resp.statusText} ${text}`);
+        throw new Error(`CryptoCompare price request failed: ${resp.status} ${resp.statusText} ${text}`);
     }
     const payload = await resp.json();
-    const price = payload?.market_data?.current_price?.usd?.toString() ?? '0';
+    const price = payload?.SUI?.USD?.toString() ?? '0';
     SUI_PRICE_CACHE[cacheKey] = price;
     return price;
 }
