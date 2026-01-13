@@ -61,7 +61,8 @@ async function getDotPriceUsd(date: Date): Promise<string> {
 }
 
 async function fetchSubscanTransfers(address: string, page: number, row: number): Promise<SubscanTransfersResponse> {
-    const resp = await fetch('https://polkadot.api.subscan.io/api/scan/transfers', {
+    const url = 'https://polkadot.api.subscan.io/api/v2/scan/transfers';
+    const resp = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
