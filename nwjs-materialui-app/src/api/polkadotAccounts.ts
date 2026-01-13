@@ -28,16 +28,8 @@ type SubscanTransfersResponse = {
     };
 };
 
-const DOT_DECIMALS = 10;
-const DOT_PRICE_CACHE: Record<string, string> = {};
 
-function formatDotAmount(raw: BigNumber, decimals: number, rawInput: string): string {
-    if (rawInput.includes('.')) {
-        return raw.toString();
-    }
-    const fixed = raw.shiftedBy(-decimals).toFixed(decimals);
-    return fixed.replace(/\.?0+$/, '');
-}
+const DOT_PRICE_CACHE: Record<string, string> = {};
 
 function formatCoinGeckoDate(date: Date): string {
     const day = String(date.getUTCDate()).padStart(2, '0');
@@ -123,14 +115,13 @@ export async function getPolkadotTransactionHistory(address: string): Promise<Po
             if (!signed) {
                 continue;
             }
-            const decimals = transfer.asset_decimals ?? DOT_DECIMALS;
             const timeMs = (transfer.block_timestamp ?? 0) * 1000;
             if (!timeMs) {
                 continue;
             }
             const time = new Date(timeMs);
             const priceUsd = await getDotPriceUsd(time);
-            const amountDot = formatDotAmount(signed, decimals, transfer.amount ?? '0');
+            const amountDot = signed.toString();
             const amountUsd = new BigNumber(amountDot).multipliedBy(priceUsd).toString();
             rows.push({
                 time: time.toLocaleString('en-SG'),
