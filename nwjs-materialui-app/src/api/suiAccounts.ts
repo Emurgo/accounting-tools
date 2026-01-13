@@ -9,18 +9,20 @@ export type SuiTransactionRow = {
     amountUsd: string;
 };
 
-type SuiPageResponse = {
-    data?: Array<{
-        digest: string;
-        timestampMs?: string | number;
-        balanceChanges?: Array<{
-            coinType?: string;
-            amount?: string | number;
-            owner?: {
-                AddressOwner?: string;
-            };
-        }>;
+type SuiTransactionBlock = {
+    digest: string;
+    timestampMs?: string | number;
+    balanceChanges?: Array<{
+        coinType?: string;
+        amount?: string | number;
+        owner?: {
+            AddressOwner?: string;
+        };
     }>;
+};
+
+type SuiPageResponse = {
+    data?: SuiTransactionBlock[];
     nextCursor?: string | null;
     hasNextPage?: boolean;
 };
@@ -62,7 +64,10 @@ async function getSuiPriceUsd(date: Date): Promise<string> {
     return price;
 }
 
-async function fetchSuiTransactions(address: string, cursor?: string | null): Promise<SuiPageResponse> {
+async function fetchSuiTransactions(
+    filter: Record<string, unknown>,
+    cursor?: string | null
+): Promise<SuiPageResponse> {
     const url = 'https://fullnode.mainnet.sui.io:443';
     const body = {
         jsonrpc: '2.0',
@@ -70,9 +75,7 @@ async function fetchSuiTransactions(address: string, cursor?: string | null): Pr
         method: 'suix_queryTransactionBlocks',
         params: [
             {
-                filter: {
-                    FromOrToAddress: address,
-                },
+                filter,
                 options: {
                     showBalanceChanges: true,
                     showEffects: false,
@@ -105,7 +108,7 @@ async function fetchSuiTransactions(address: string, cursor?: string | null): Pr
     return payload?.result as SuiPageResponse;
 }
 
-function getSuiNetChange(entry: SuiPageResponse['data'][number], address: string): BigNumber | null {
+function getSuiNetChange(entry: SuiTransactionBlock, address: string): BigNumber | null {
     const changes = entry.balanceChanges ?? [];
     let net = new BigNumber(0);
     for (const change of changes) {
@@ -123,44 +126,78 @@ function getSuiNetChange(entry: SuiPageResponse['data'][number], address: string
     return net;
 }
 
+async function fetchAllTransactionsByFilter(
+    address: string,
+    filter: Record<string, unknown>
+): Promise<SuiTransactionBlock[]> {
+    const rows: SuiTransactionBlock[] = [];
+    let cursor: string | null | undefined = null;
+    for (let page = 0; page < 100000; page += 1) {
+        const payload = await fetchSuiTransactions(filter, cursor);
+        const data = payload.data ?? [];
+        if (data.length === 0) {
+            break;
+        }
+        rows.push(...data);
+        cursor = payload.nextCursor ?? null;
+        if (!payload.hasNextPage) {
+            break;
+        }
+    }
+    return rows;
+}
+
 export async function getSuiTransactionHistory(address: string): Promise<SuiTransactionRow[]> {
     const normalizedAddress = address.trim();
     if (!normalizedAddress) {
         return [];
     }
+    let blocks: SuiTransactionBlock[] = [];
+    try {
+        blocks = await fetchAllTransactionsByFilter(normalizedAddress, {
+            FromOrToAddress: {
+                addr: normalizedAddress,
+            },
+        });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (!message.includes('FromOrToAddress') || !message.toLowerCase().includes('not supported')) {
+            throw err;
+        }
+        const [fromBlocks, toBlocks] = await Promise.all([
+            fetchAllTransactionsByFilter(normalizedAddress, { FromAddress: normalizedAddress }),
+            fetchAllTransactionsByFilter(normalizedAddress, { ToAddress: normalizedAddress }),
+        ]);
+        const unique = new Map<string, SuiTransactionBlock>();
+        for (const entry of [...fromBlocks, ...toBlocks]) {
+            if (!unique.has(entry.digest)) {
+                unique.set(entry.digest, entry);
+            }
+        }
+        blocks = Array.from(unique.values());
+    }
+
     const rows: Array<SuiTransactionRow & { timeMs: number }> = [];
-    let cursor: string | null | undefined = null;
-    for (let page = 0; page < 100000; page += 1) {
-        const payload = await fetchSuiTransactions(normalizedAddress, cursor);
-        const data = payload.data ?? [];
-        if (data.length === 0) {
-            break;
+    for (const entry of blocks) {
+        const timeMs = Number(entry.timestampMs ?? 0);
+        if (!timeMs) {
+            continue;
         }
-        for (const entry of data) {
-            const timeMs = Number(entry.timestampMs ?? 0);
-            if (!timeMs) {
-                continue;
-            }
-            const net = getSuiNetChange(entry, normalizedAddress);
-            if (!net) {
-                continue;
-            }
-            const priceUsd = await getSuiPriceUsd(new Date(timeMs));
-            const amountSui = formatSuiAmount(net);
-            const amountUsd = new BigNumber(amountSui).multipliedBy(priceUsd).toString();
-            rows.push({
-                time: new Date(timeMs).toLocaleString('en-SG'),
-                digest: entry.digest,
-                amount: amountSui,
-                priceUsd,
-                amountUsd,
-                timeMs,
-            });
+        const net = getSuiNetChange(entry, normalizedAddress);
+        if (!net) {
+            continue;
         }
-        cursor = payload.nextCursor ?? null;
-        if (!payload.hasNextPage) {
-            break;
-        }
+        const priceUsd = await getSuiPriceUsd(new Date(timeMs));
+        const amountSui = formatSuiAmount(net);
+        const amountUsd = new BigNumber(amountSui).multipliedBy(priceUsd).toString();
+        rows.push({
+            time: new Date(timeMs).toLocaleString('en-SG'),
+            digest: entry.digest,
+            amount: amountSui,
+            priceUsd,
+            amountUsd,
+            timeMs,
+        });
     }
     rows.sort((a, b) => b.timeMs - a.timeMs);
     return rows.map(({ timeMs, ...rest }) => rest);
