@@ -5,6 +5,8 @@ import { CARDANO_API_KEY } from '../../secrets';
 const DB_NAME = 'BlockfrostCache';
 const STORE_NAME = 'responses';
 const adaPriceCache: Record<string, string> = {};
+const USDA_ASSET_NAME_HEX = '55534441';
+const USDA_DECIMALS = 6;
 
 type AmountEntry = { unit: string; quantity: string };
 
@@ -182,6 +184,18 @@ async function* getTransactions(stakeOrBaseAddress: string) {
     })
     return [internal, external]
   }
+
+  function sumUsda(ios) {
+    let total = new BigNumber('0')
+    ios.forEach(({ address, amount }) => {
+      if (!addrSet.has(address)) {
+        return
+      }
+      const usda = amount?.find((a: AmountEntry) => a.unit.endsWith(USDA_ASSET_NAME_HEX))?.quantity ?? '0'
+      total = total.plus(usda)
+    })
+    return total
+  }
   let prevTxHash
   for await (const { txHash, blockTime } of txs) {
     if (txHash === prevTxHash) {
@@ -198,6 +212,9 @@ async function* getTransactions(stakeOrBaseAddress: string) {
     */
     const [fromWallet, fromExternal] = labelFunds(utxosResp.inputs)
     const [toWallet, toExternal] = labelFunds(utxosResp.outputs)
+    const usdaIn = sumUsda(utxosResp.inputs)
+    const usdaOut = sumUsda(utxosResp.outputs)
+    const usdaMovement = usdaOut.minus(usdaIn)
     const fee = fromWallet.plus(fromExternal).minus(toWallet).minus(toExternal)
     // accounting, don't ask why
     let amount
@@ -225,6 +242,7 @@ async function* getTransactions(stakeOrBaseAddress: string) {
       price,
       netUsd: net.multipliedBy(price),
       feeUsd: accountingFee.multipliedBy(price),
+      usdaMovement,
     }
   }
 }
@@ -264,6 +282,7 @@ export async function getTransactionHistory(stakeOrBaseAddress: string): Promise
   price: string,
   netUsd: string,
   feeUsd: string,
+  usdaMovement: string,
 }[]> {
   const rows = await Array.fromAsync(getTransactions(stakeOrBaseAddress))
   rows.reverse()
@@ -273,7 +292,8 @@ export async function getTransactionHistory(stakeOrBaseAddress: string): Promise
     row.balance = balance
     for (const key in row) {
       if (row[key] instanceof BigNumber) {
-        row[key] = row[key].shiftedBy(-6).toString()
+        const decimals = key === 'usdaMovement' ? USDA_DECIMALS : 6
+        row[key] = row[key].shiftedBy(-decimals).toString()
       }
     }
   }

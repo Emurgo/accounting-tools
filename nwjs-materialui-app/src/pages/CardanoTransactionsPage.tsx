@@ -25,7 +25,7 @@ const CardanoTransactionsPage: React.FC = () => {
         const sheet = workbook.addWorksheet('Cardano Transactions');
         // Add header
         sheet.addRow([
-            'Tx Hash', 'Date', 'Amount', 'Fee', 'Net', 'Balance', 'Price', 'Net (USD)', 'Fee (USD)'
+            'Tx Hash', 'Date', 'Amount', 'Fee', 'Net', 'Balance', 'Price', 'Net (USD)', 'Fee (USD)', 'USDA Movement'
         ]);
         transactions.forEach(tx => {
             sheet.addRow([
@@ -37,7 +37,8 @@ const CardanoTransactionsPage: React.FC = () => {
                 tx.balance,
                 tx.price,
                 tx.netUsd,
-                tx.feeUsd
+                tx.feeUsd,
+                tx.usdaMovement
             ]);
         });
         sheet.columns = [
@@ -50,6 +51,7 @@ const CardanoTransactionsPage: React.FC = () => {
             { width: 10 }, // Price
             { width: 14 }, // Net (USD)
             { width: 14 }, // Fee (USD)
+            { width: 16 }, // USDA Movement
         ];
         const buffer = await workbook.xlsx.writeBuffer();
         fileDownload(buffer, 'cardano_transactions.xlsx');
@@ -92,6 +94,7 @@ const CardanoTransactionsPage: React.FC = () => {
                             <TableCell>Price</TableCell>
                             <TableCell>Net (USD)</TableCell>
                             <TableCell>Fee (USD)</TableCell>
+                            <TableCell>USDA Movement</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -106,6 +109,7 @@ const CardanoTransactionsPage: React.FC = () => {
                                 <TableCell>{tx.price}</TableCell>
                                 <TableCell>{tx.netUsd}</TableCell>
                                 <TableCell>{tx.feeUsd}</TableCell>
+                                <TableCell>{tx.usdaMovement}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
